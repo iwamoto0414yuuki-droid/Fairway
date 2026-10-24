@@ -87,6 +87,13 @@ final class WatchSupportTests: XCTestCase {
             guard process.terminationStatus == 0 else {
                 throw WatchSupportError.invalid("Offline fixture command failed: " + String(decoding: error, as: UTF8.self))
             }
+            if arguments.contains("--entitlements") {
+                let combined = String(decoding: data + error, as: UTF8.self)
+                guard let begin = combined.range(of: "<?xml"), let end = combined.range(of: "</plist>") else {
+                    throw WatchSupportError.invalid("Apple codesign did not return XML entitlements: " + String(combined.prefix(2000)))
+                }
+                return Data(combined[begin.lowerBound..<end.upperBound].utf8)
+            }
             return data
         }
         let source = root.appendingPathComponent("fixture.c")
@@ -106,11 +113,13 @@ final class WatchSupportTests: XCTestCase {
         try await signer.signApp(at: app.fileURL, provisioningProfiles: [profile(platform: "iOS", bundle: "local.test"), profile()])
         let rawEntitlements = try MachOParser.entitlements(at: watchURL)
         XCTAssertFalse(rawEntitlements.isEmpty, "Watch executable has no entitlements after signing")
+        let embedded = try XCTUnwrap(PropertyListSerialization.propertyList(from: Data(rawEntitlements.utf8), options: [], format: nil) as? [String: Any])
+        XCTAssertEqual(embedded["application-identifier"] as? String, team + ".local.test.watch")
+        // Verifies nested Mach-O signatures and resource seals; this is not Apple provisioning approval.
+        _ = try command("/usr/bin/codesign", ["--verify", "--deep", "--strict", app.fileURL.path])
         let watchEntitlements = try command("/usr/bin/codesign", ["--display", "--entitlements", "-", "--xml", watchURL.path])
         let values = try XCTUnwrap(PropertyListSerialization.propertyList(from: watchEntitlements, options: [], format: nil) as? [String: Any])
         XCTAssertEqual(values["application-identifier"] as? String, team + ".local.test.watch")
-        // Verifies nested Mach-O signatures and resource seals; this is not Apple provisioning approval.
-        _ = try command("/usr/bin/codesign", ["--verify", "--deep", "--strict", app.fileURL.path])
     }
     #endif
 }

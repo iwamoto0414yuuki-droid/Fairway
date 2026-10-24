@@ -184,7 +184,7 @@ def pdf():
         canvas.setFillColor(colors.HexColor('#68766b'))
         canvas.drawString(48, 817, GUIDE_BANNER)
         canvas.drawRightString(547, 25, f'{document.page} / {len(PAGES)}')
-        canvas.drawString(48, 25, '確認日 2026-10-24')
+        canvas.drawString(48, 25, f'確認日 {CHECKED_DATE}')
     doc = SimpleDocTemplate(str(OUT / f'{GUIDE_NAME}.pdf'), pagesize=A4, leftMargin=48, rightMargin=48, topMargin=48, bottomMargin=44, title='Fairway 導入手順 Windows', author='Fairway')
     doc.build(flow, onFirstPage=frame, onLaterPages=frame)
 

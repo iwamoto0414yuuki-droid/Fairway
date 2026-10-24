@@ -38,6 +38,17 @@ def apply(store, sign):
             '} else if resolved.path.contains(".framework") || resolved.pathExtension == "dylib" {\n'
             '                            targetType = .framework; xml = ""\n'
             '                        } else if let matchedExt = ')
+    replace(sign, path, '            debugLog("[SideSign] AppBundleSigner.signApp completed successfully")',
+            '            for watch in appBundle.watchSigningBundles {\n'
+            '                guard let matching = profile(for: watch) else { throw SignerError.missingProvisioningProfile(bundleIdentifier: watch.bundleIdentifier) }\n'
+            '                let xml = try MachOParser.entitlements(at: watch.fileURL)\n'
+            '                guard let data = xml.data(using: .utf8), let values = try PropertyListSerialization.propertyList(from: data, options: [], format: nil) as? [String: Any],\n'
+            '                      values["application-identifier"] as? String == matching.entitlements["application-identifier"] as? String,\n'
+            '                      FileManager.default.fileExists(atPath: watch.fileURL.appendingPathComponent("_CodeSignature/CodeResources").path) else {\n'
+            '                    throw SignerError.invalidApp(cause: "Watchの実行ファイル署名と専用profileが一致しません。インストールを停止しました。")\n'
+            '                }\n'
+            '            }\n'
+            '            debugLog("[SideSign] AppBundleSigner.signApp completed successfully")')
     path = 'SideStore/Core/Operations/PipelineOperations/FetchProvisioningProfilesOperation.swift'
     replace(store, path, '        let appExtensions = targetAppBundle.appExtensions',
             '        let watches = try WatchBundleSupport.applications(in: targetAppBundle)\n'
