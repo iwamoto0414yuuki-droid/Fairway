@@ -70,3 +70,7 @@ GitHub Actions定義は `.github/workflows/ios.yml`。公開リポジトリの�
 0.2.0の操作と互換性は [更新内容](docs/UPDATE_0.2.0.md)。既存アプリは削除せず上書きし、iPhone・Watchを両方更新してください。
 
 詳しい調査は [調査と設計](docs/RESEARCH.md)、実機確認は [検証計画](docs/VALIDATION.md)。
+
+## 別の人に渡す
+
+Windows用の初回導入手順（PDF・Word）と完全版IPAを `release/Fairway-0.2.0-Windows-配布セット.zip` にまとめています。[配布セットの説明](docs/DISTRIBUTION.md)。初回も最新版IPAの1本だけを使います。
