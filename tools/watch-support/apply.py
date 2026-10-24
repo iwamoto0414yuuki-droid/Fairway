@@ -21,8 +21,6 @@ def apply(store, sign):
     replace(sign, 'Tests/SideSignTests/SideSignTests.swift', 'import Testing', 'import Foundation\nimport Testing')
     replace(sign, 'Sources/Models/ProvisioningProfile.swift',
             'private static func dictionary(fromEncodedData', 'static func dictionary(fromEncodedData')
-    replace(sign, 'Sources/Models/AppBundle.swift',
-            '[self] + Array(appExtensions).sorted', '[self] + watchSigningBundles + Array(appExtensions).sorted')
     path = 'Sources/CodeSigning/CodeSignerAPI.swift'
     replace(sign, path, '        var entitlementsByURL: [URL: String] = [:]',
             '        _ = try WatchBundleSupport.applications(in: appBundle)\n'

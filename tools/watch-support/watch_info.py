@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: GPL-3.0-or-later
 """Read paired Watch UDIDs through the existing USB trust relationship.
 
 No Apple Account login, signing, app installation, certificate change or network upload.

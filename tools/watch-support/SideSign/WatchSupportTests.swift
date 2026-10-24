@@ -46,7 +46,9 @@ final class WatchSupportTests: XCTestCase {
         defer { try? FileManager.default.removeItem(at: root) }
         let app = try host(at: root)
         XCTAssertEqual(try WatchBundleSupport.applications(in: app).count, 1)
-        XCTAssertEqual(app.allAppBundles.count, 2)
+        XCTAssertEqual(app.watchSigningBundles.count, 1)
+        // Keep the existing phone customization pipeline's bundle set unchanged.
+        XCTAssertEqual(app.allAppBundles.count, 1)
     }
     func testWrongCompanionRejected() throws {
         let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
@@ -106,7 +108,21 @@ final class WatchSupportTests: XCTestCase {
         let key = root.appendingPathComponent("fixture-key.pem")
         let cert = root.appendingPathComponent("fixture-cert.pem")
         let p12 = root.appendingPathComponent("fixture.p12")
-        _ = try command("/usr/bin/openssl", ["req", "-x509", "-newkey", "rsa:2048", "-nodes", "-days", "1", "-subj", "/CN=Offline Watch Test/OU=" + team, "-keyout", key.path, "-out", cert.path])
+        let config = root.appendingPathComponent("fixture.cnf")
+        try """
+        [req]
+        distinguished_name = dn
+        x509_extensions = code_signing
+        prompt = no
+        [dn]
+        CN = Offline Watch Test
+        OU = \(team)
+        [code_signing]
+        basicConstraints = critical,CA:FALSE
+        keyUsage = critical,digitalSignature
+        extendedKeyUsage = critical,codeSigning
+        """.write(to: config, atomically: true, encoding: .utf8)
+        _ = try command("/usr/bin/openssl", ["req", "-x509", "-newkey", "rsa:2048", "-sha256", "-nodes", "-days", "1", "-config", config.path, "-keyout", key.path, "-out", cert.path])
         _ = try command("/usr/bin/openssl", ["pkcs12", "-export", "-inkey", key.path, "-in", cert.path, "-out", p12.path, "-passout", "pass:fixture"])
         let identity = try KeyStore(p12Data: Data(contentsOf: p12), password: "fixture")
         let signer = AppBundleSigner(team: Team(identifier: team, name: "Offline", type: .free), keyStore: identity)

@@ -83,6 +83,9 @@ def build():
     for name, source in required.items():
         shutil.copyfile(source, OUT/name)
     shutil.copyfile(ROOT/'tools/watch-support/watch_info.py', OUT/'WatchInfo-source.py')
+    for path in (ROOT/'release/watch-info-source').iterdir():
+        if path.is_file(): shutil.copyfile(path, OUT/path.name)
+    shutil.copyfile(ROOT/'tools/watch-support/SOURCE.md', OUT/'SOURCE-and-notices.md')
     guide.OUT = OUT; guide.PAGES = PAGES
     guide.GUIDE_NAME = '01_Watch導入手順'; guide.GUIDE_BANNER = 'FAIRWAY 0.3.0 / Watch対応SideStore 個人用試験版'
     guide.CHECKED_DATE = '2026-10-25'
