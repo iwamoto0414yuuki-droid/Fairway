@@ -1,78 +1,34 @@
-# Fairway — iPhone / Apple Watch ゴルフスコア
+# Fairway — Watchで使う最小ゴルフカウンター
 
-2026-10-24 更新版0.2.0。対象は iPhone 16e と Apple Watch Series 7。最低要件はiOS 17 / watchOS 10。実機のOSバージョンは未確認です。
+2026-10-25。現行の開発版は0.3.0。対象はiPhone 16e／Apple Watch Series 7、最低iOS 17／watchOS 10です。
 
-**ネイティブテスト30件・失敗0件、iPhoneとWatchの実機向けビルドが成功し、Watch同梱の未署名IPAを生成しました。** [成功したビルド](https://github.com/iwamoto0414yuuki-droid/Fairway/actions/runs/40089461199)。実機でのSideStore導入・端末間同期・GPS・電池消費は未検証です。
+Watchへの導入を優先し、GPS・地図を外しました。打数、パット、ホール別スコア、前半・後半の集計、任意のクラブ記録に絞っています。Watch単体で9／18ホールを開始でき、各操作は端末に自動保存します。同期はホールを離れたときなどにまとめ、常時測位・ポーリングは行いません。過去版の保存データは引き続き読み取れます。
 
-ローカル配布ファイルは `release/Fairway-0.2.0-unsigned.ipa`（582,670 bytes）、[導入手順](INSTALL.md)、[検証結果](docs/RESULTS.md)。
-
-**実機導入の状況：iPhone版は起動したとの報告がありますが、Watch版は整合性エラーで導入失敗。SideStore向けID修正だけでは解決していません。** Windowsで試す次の候補と限界は [Watch署名状況](docs/WATCH_SIGNING_STATUS.md) を参照してください。
-
-![Watchのスコア入力（40mmシミュレーター）](docs/images/native-watch.png)
-
-## 実装した機能
-
-- 9 / 18ホールのラウンド作成、打数、任意のパット数、罰打込みの入力。
-- ホール別修正、入力取消、未入力を除いた合計・対パー、終了・再開・履歴。
-- 前半（1〜9H）・後半（10〜18H）・全体のスコアとパット合計。未記録と0パットを区別。
-- 一打ごとの使用クラブを任意で記録。クラブ編集はGPS・通信を開始せず、スコア保存時にまとめて同期。
-- iPhoneでコース検索、航空写真をタップして各グリーン中央を登録、PARの設定。
-- Watch / iPhoneの「距離を更新」で単発GPS測位、グリーン中央までの直線距離（yd）。
-- 測定時刻・報告精度を表示。最大20秒で測位を打ち切り、画面を離れると停止。
-- スコアの端末内保存、WatchConnectivityによる保存時転送、切断中のキュー。
-- 履歴から同じコースのPARとグリーン位置を再利用。iPhoneからスコアをCSVテキストで共有。
-
-GPSは常時更新しません。位置未登録・権限拒否・取得失敗でもスコアは記録できます。全国のゴルフ場データベース、グリーン前後距離、高低差補正、ホール自動判定、スイング検知、HealthKitは初版に含めません。
+![Watch最小版（シミュレーター）](docs/images/native-watch-minimal.png)
 
 ## 操作
 
-1. iPhoneで「ラウンドをはじめる」→ コース名・9/18ホール。
-2. 各ホールを開き「PAR・グリーン位置を設定」。検索でゴルフ場へ移動し、航空写真を拡大してグリーン中央をタップ→保存。初期PARは全ホール4なので必ず実際の値へ変更。
-3. Watchにラウンドが届いたら開く。届かない場合、両端末でアプリを開き、iPhoneのラウンド内で「このラウンドを再送」。WatchConnectivityは即時到着を保証しません。
-4. 「スコアを入力」→打数の−/＋→「保存して次へ」。Watchの距離確認は「GPS距離」から開いて「距離を更新」。画面は縦スクロールできます。閉じる前に必ず保存してください。
-5. ラウンド終了時にカードを確認して終了。未入力がある場合も確認して終了できます。
+- 左の大きな数字が総打数、右がパット数。上下の−／＋で変更します。
+- パットの＋は総打数にも1打加算します。パットで左右両方の＋を押す必要はありません。
+- Watchでは横スワイプでホールと集計を切り替えます。
+- 「クラブ（任意）」で必要な打だけクラブを選択できます。選択は自動保存です。
+- iPhoneではホール別のスコアカードを確認できます。
 
-距離は手動登録位置への測定時点の概算です。ピンの実位置や高低差は反映しません。GPS精度が50mを超える場合や15秒より古い測位結果は表示しません。50m以下でも測定誤差があるため表示された精度を確認してください。2km以上離れた登録先は距離の代わりに位置確認を表示します。
+## 導入状況と個人用SideStore試験版
 
-## Macでの確認
+以前のIPAはiPhoneで起動したとの報告がありますが、Watchへの導入は整合性エラーで失敗しています。通常のSideStore向けID修正だけでは解決していません。試験版iloaderも今回のApple Account認証を通過できませんでした。
 
-XcodeとXcodeGenが必要です。ユーザーの承認を得て[公開リポジトリ](https://github.com/iwamoto0414yuuki-droid/Fairway)を作成し、GitHub ActionsのMacでビルド・テストしました。
+現在動いているSideStore 0.7系のログイン・証明書を利用するため、個人用のWatch対応改修を開発しています。元の認証処理とアプリ識別子を維持し、Watchの端末登録、専用profileの取得・検査、親子IDの書き換え、個別署名、Watchを含むアプリのRefresh時の再署名を追加します。
 
-```sh
-brew install xcodegen
-xcodegen generate
-open Fairway.xcodeproj
-```
+この改修は公式SideStoreではありません。**実機での認証引継ぎ・無料アカウントでのWatch導入・次回Refresh後のWatch起動は未確認です。** ビルドやオフライン検査の成功を実機成功と混同しません。
 
-Fairway / FairwayWatchのSigning & Capabilitiesで同じ開発チームを指定し、ペアリングした実機を選択します。Bundle IDを変更する場合は、iPhone ID、Watch IDのプレフィックス、WatchのWKCompanionAppBundleIdentifierの3箇所を合わせてください。
+- [導入手順](INSTALL.md)
+- [個人用SideStoreのソース・ライセンス・ビルド手順](tools/watch-support/SOURCE.md)
+- [調査と改修箇所](docs/SIDESTORE_WATCH_FEASIBILITY.md)
+- [0.2.0の開発記録](docs/README_0.2.0_ARCHIVE.md)
 
-SideStore向けの未署名IPA作成:
+## ビルド
 
-```sh
-bash scripts/build_ipa.sh
-```
+FairwayはXcodeとXcodeGenでビルドします。GitHub Actionsの `ios.yml` がテストとiPhone／Watchの実機向けビルドを行い、未署名IPAを作成します。ローカルコマンドは `bash scripts/build_ipa.sh`。出力は `build/Fairway-0.3.0-unsigned.ipa` です。
 
-出力は `build/Fairway-0.1.0-unsigned.ipa`。スクリプトはWatchアプリの同梱、実機プラットフォーム、親子Bundle IDを検査します。**同梱確認だけではSideStoreでのWatch導入成功を保証しません。再署名後のID整合とWatchへのインストールを実機で確認する必要があります。**
-
-GitHub Actions定義は `.github/workflows/ios.yml`。公開リポジトリのみ実行する制限があり、非公開リポジトリの有料Mac実行を自動で始めません。公開する前にユーザーの同意が必要です。ローカルのMacであれば公開せずビルドできます。
-
-## 保存・同期の仕様
-
-- Application Support内のJSONへatomic write。保存成功後に送信。読込破損時は上書きを停止して原本を保護。
-- 各ホールのスコア / PAR / グリーン位置と終了状態を別々に更新番号で管理。
-- 別ホールのオフライン編集はマージ。同一項目の同時編集は論理カウンター、同値なら端末ID順で決定。実時刻の後勝ちではありません。
-- 画面を開いた後に同じホールのスコアを受信した場合、古い編集内容での保存を止めて再確認を要求。
-- 転送は保存時のみ（起動時に最新ラウンドも再送）。転送失敗時は再送ボタンを使用。転送完了表示は相手側ディスクへの保存確認ではありません。
-- ラウンド削除・データ復元UIは未実装。アプリ削除でローカルデータが失われる可能性があります。
-
-## 検証
-
-テストは合計30件です。`CoreTests.swift` の15件は合計・未入力・境界・距離計算・重複/順序逆転/同時編集/取消の同期・JSON往復・転送サイズ、`StoreTests.swift` の4件は保存・再読込・古い編集の拒否・破損データ保護・コース再利用、`ScreenTests.swift` の1件はiPhoneの4画面描画を検証します。UpdateTests.swiftの10件は前後半・パット集計、旧版データ互換、クラブの保存と同期、CSVと転送サイズを検証します。画像は空白でないことも確認します。実行にはXcodeが必要です。
-
-0.2.0の操作と互換性は [更新内容](docs/UPDATE_0.2.0.md)。既存アプリは削除せず上書きし、iPhone・Watchを両方更新してください。
-
-詳しい調査は [調査と設計](docs/RESEARCH.md)、実機確認は [検証計画](docs/VALIDATION.md)。
-
-## 別の人に渡す
-
-Windows用の初回導入手順（PDF・Word）と完全版IPAを `release/Fairway-0.2.0-Windows-配布セット.zip` にまとめています。[配布セットの説明](docs/DISTRIBUTION.md)。初回も最新版IPAの1本だけを使います。
+SideStoreの個人用試験版は `sidestore-watch.yml` で固定した公開ソースに `tools/watch-support/apply.py` を適用して作成します。Appleのパスワード・証明書・端末IDをCIへ渡すことはありません。対応する改修ソースもIPAと一緒に生成します。WindowsのWatch情報ツールは `watch-info.yml` で作成します。
