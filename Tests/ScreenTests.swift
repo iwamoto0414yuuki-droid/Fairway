@@ -10,11 +10,14 @@ final class ScreenTests: XCTestCase {
         let store = Store(fileURL: directory.appendingPathComponent("rounds.json"), connectivity: false)
         let id = try XCTUnwrap(store.create(course: "サンプルコース", count: 18))
         XCTAssertTrue(store.configure(id, hole: 0, par: 4, green: Coordinate(latitude: 35.6, longitude: 140.1)))
-        XCTAssertTrue(store.saveScore(id, hole: 0, score: Score(strokes: 5, putts: 2), expected: .zero))
+        XCTAssertTrue(store.saveScore(id, hole: 0, score: Score(strokes: 5, putts: 2, clubs: [.driver, .iron7, .sw, .putter, .putter]), expected: .zero))
+        XCTAssertTrue(store.saveScore(id, hole: 9, score: Score(strokes: 4, putts: nil), expected: .zero))
         snapshot(HomeView().environmentObject(store), name: "native-home")
         snapshot(NavigationStack { RoundView(id: id) }.environmentObject(store), name: "native-card")
         let round = try XCTUnwrap(store.round(id))
         snapshot(NavigationStack { ScoreEntry(id: id, holeIndex: 0, initial: round.holes[0]) }.environmentObject(store), name: "native-score")
+        let selected: [Club?] = [.driver, .iron7, .sw, .putter, .putter] + Array<Club?>(repeating: nil, count: 25)
+        snapshot(NavigationStack { ClubEditor(clubs: .constant(selected), strokes: 5) }, name: "native-clubs")
     }
     private func snapshot<V: View>(_ view: V, name: String) {
         let controller = UIHostingController(rootView: view.tint(fairwayGreen).preferredColorScheme(.dark))

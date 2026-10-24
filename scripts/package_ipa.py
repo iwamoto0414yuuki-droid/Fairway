@@ -26,7 +26,7 @@ def package():
         executable = bundle / info["CFBundleExecutable"]
         if not executable.is_file() or executable.stat().st_size < 1024:
             raise SystemExit("Native executable missing: " + str(executable))
-    dest = ROOT / "build/Fairway-0.1.0-unsigned.ipa"
+    dest = ROOT / "build/Fairway-0.2.0-unsigned.ipa"
     with zipfile.ZipFile(dest, "w", zipfile.ZIP_DEFLATED) as archive:
         for file in sorted(app.rglob("*")):
             if file.is_file():

@@ -47,13 +47,13 @@ jobs:
         run: python3 scripts/watch_preview.py
       - uses: actions/upload-artifact@v4
         with:
-          name: Fairway-0.1.0-SideStore
+          name: Fairway-0.2.0-SideStore
           path: |
-            build/Fairway-0.1.0-unsigned.ipa
-            build/Fairway-0.1.0-unsigned.ipa.sha256
+            build/Fairway-0.2.0-unsigned.ipa
+            build/Fairway-0.2.0-unsigned.ipa.sha256
             build/native-tests.log
             build/screenshots/
-            build/native-watch.png
+            build/native-watch*.png
             build/watch-preview-device.json
           if-no-files-found: error
           retention-days: 3

@@ -32,10 +32,79 @@ struct Coordinate: Codable, Equatable {
     }
 }
 
+enum Club: String, Codable, CaseIterable, Identifiable {
+    case driver, wood3, wood5, wood7, hybrid3, hybrid4, hybrid5
+    case iron3, iron4, iron5, iron6, iron7, iron8, iron9
+    case pw, aw, sw, lw, putter, penalty
+    var id: String { rawValue }
+    var shortName: String {
+        switch self {
+        case .driver: return "1W"
+        case .wood3: return "3W"
+        case .wood5: return "5W"
+        case .wood7: return "7W"
+        case .hybrid3: return "3UT"
+        case .hybrid4: return "4UT"
+        case .hybrid5: return "5UT"
+        case .iron3: return "3I"
+        case .iron4: return "4I"
+        case .iron5: return "5I"
+        case .iron6: return "6I"
+        case .iron7: return "7I"
+        case .iron8: return "8I"
+        case .iron9: return "9I"
+        case .pw: return "PW"
+        case .aw: return "AW"
+        case .sw: return "SW"
+        case .lw: return "LW"
+        case .putter: return "PT"
+        case .penalty: return "罰打"
+        }
+    }
+    var title: String {
+        switch self {
+        case .driver: return "ドライバー（1W）"
+        case .wood3, .wood5, .wood7: return "\(shortName) ウッド"
+        case .hybrid3, .hybrid4, .hybrid5: return "\(shortName) ユーティリティ"
+        case .iron3, .iron4, .iron5, .iron6, .iron7, .iron8, .iron9: return "\(shortName) アイアン"
+        case .pw: return "PW ピッチングウェッジ"
+        case .aw: return "AW アプローチウェッジ"
+        case .sw: return "SW サンドウェッジ"
+        case .lw: return "LW ロブウェッジ"
+        case .putter: return "パター"
+        case .penalty: return "罰打（クラブなし）"
+        }
+    }
+}
+
 struct Score: Codable, Equatable {
     var strokes: Int
     var putts: Int?
-    var isValid: Bool { (1...30).contains(strokes) && (putts.map { (0...strokes).contains($0) } ?? true) }
+    // Optional field decodes missing 0.1.0 records as nil without rewriting history.
+    var clubs: [Club?]? = nil
+    var isValid: Bool {
+        (1...30).contains(strokes) && (putts.map { (0...strokes).contains($0) } ?? true)
+        && (clubs.map { $0.count == strokes } ?? true)
+    }
+    var clubsRecorded: Int { clubs?.compactMap { $0 }.count ?? 0 }
+}
+
+struct ScoreSummary: Equatable {
+    var holes: Int
+    var played: Int
+    var strokes: Int
+    var putts: Int
+    var puttsRecorded: Int
+    init(_ holes: [Hole]) {
+        self.holes = holes.count
+        let scores = holes.compactMap { $0.score.value }
+        played = scores.count
+        strokes = scores.reduce(0) { $0 + $1.strokes }
+        let recorded = scores.compactMap(\.putts)
+        putts = recorded.reduce(0, +); puttsRecorded = recorded.count
+    }
+    var strokesText: String { played == 0 ? "—" : "\(strokes)打" }
+    var puttsText: String { puttsRecorded == 0 ? "未記録" : "\(putts)" }
 }
 
 struct Hole: Codable, Equatable, Identifiable {
@@ -65,6 +134,9 @@ struct Round: Codable, Equatable, Identifiable {
         holes.reduce(0) { total, hole in total + (hole.score.value.map { score in score.strokes - hole.par.value } ?? 0) }
     }
     var relativeText: String { relative == 0 ? "E" : String(format: "%+d", relative) }
+    var summary: ScoreSummary { ScoreSummary(holes) }
+    var frontSummary: ScoreSummary { ScoreSummary(Array(holes.prefix(9))) }
+    var backSummary: ScoreSummary? { holes.count == 18 ? ScoreSummary(Array(holes.suffix(9))) : nil }
     var maxCounter: Int { (holes.flatMap(\.revisions) + [finished.revision]).map(\.counter).max() ?? 0 }
     var isValid: Bool {
         [9, 18].contains(holes.count) && holes.map(\.id) == Array(1...holes.count)

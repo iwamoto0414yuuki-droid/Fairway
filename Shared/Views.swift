@@ -82,15 +82,28 @@ struct RoundView: View {
                         }.frame(minHeight: 44)
                     }
                 }
+                Section("スコア集計") {
+                    if round.holes.count == 18 {
+                        SummaryRow(title: "前半（1〜9H）", summary: round.frontSummary)
+                        if let back = round.backSummary { SummaryRow(title: "後半（10〜18H）", summary: back) }
+                    }
+                    SummaryRow(title: "全体（\(round.holes.count)H）", summary: round.summary)
+                }
                 Section("スコアカード・修正") {
                     ForEach(Array(round.holes.enumerated()), id: \.element.id) { index, hole in
                         Button { selectedHole = HoleSelection(id: index) } label: {
-                            HStack {
+                            VStack(alignment: .leading, spacing: 4) {
+                              HStack {
                                 Text(String(format: "%02d", hole.id)).bold()
                                 Text("PAR \(hole.par.value)").font(.caption).foregroundStyle(.secondary)
                                 Spacer()
                                 Text(hole.score.value.map { "\($0.strokes)" } ?? "—").bold().monospacedDigit()
-                            }.frame(minHeight: 36)
+                              }.frame(minHeight: 36)
+                              if let score = hole.score.value {
+                                  Text("パット \(score.putts.map(String.init) ?? "未記録") · クラブ \(score.clubsRecorded)/\(score.strokes)打")
+                                      .font(.caption2).foregroundStyle(.secondary)
+                              }
+                            }
                         }
                     }
                 }
@@ -119,10 +132,19 @@ struct RoundView: View {
             }
         } else { Text("ラウンドが見つかりません") }
     }
-    private func csv(_ round: Round) -> String {
-        "Hole,Par,Strokes,Putts\n" + round.holes.map { hole in
-            "\(hole.id),\(hole.par.value),\(hole.score.value.map { String($0.strokes) } ?? ""),\(hole.score.value?.putts.map(String.init) ?? "")"
-        }.joined(separator: "\n")
+    private func csv(_ round: Round) -> String { round.csv }
+}
+
+struct SummaryRow: View {
+    let title: String
+    let summary: ScoreSummary
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack { Text(title).font(.headline); Spacer(); Text(summary.strokesText).bold().foregroundStyle(fairwayGreen) }
+            Text("スコア \(summary.played)/\(summary.holes)H入力済み").font(.caption).foregroundStyle(.secondary)
+            Text("パット合計 \(summary.puttsText)").font(.subheadline).monospacedDigit()
+            Text("\(summary.puttsRecorded)/\(summary.holes)H記録済み").font(.caption2).foregroundStyle(.secondary)
+        }.padding(.vertical, 4)
     }
 }
 
@@ -135,6 +157,7 @@ struct ScoreEntry: View {
     @State private var putts: Int
     @State private var includePutts: Bool
     @State private var expected: Revision
+    @State private var clubs: [Club?]
     @State private var showMap = false
     @State private var clearConfirmation = false
     init(id: UUID, holeIndex: Int, initial: Hole) {
@@ -143,6 +166,7 @@ struct ScoreEntry: View {
         _putts = State(initialValue: initial.score.value?.putts ?? 2)
         _includePutts = State(initialValue: initial.score.value?.putts != nil)
         _expected = State(initialValue: initial.score.revision)
+        _clubs = State(initialValue: Self.clubDraft(initial.score.value))
     }
     var body: some View {
         if let round = store.round(id), round.holes.indices.contains(holeIndex) {
@@ -170,7 +194,7 @@ struct ScoreEntry: View {
                     puttControls
                     #endif
                     Button(holeIndex + 1 < round.holes.count ? "保存して次へ" : "保存してカードへ") {
-                        guard store.saveScore(id, hole: holeIndex, score: Score(strokes: strokes, putts: includePutts ? putts : nil), expected: expected) else { return }
+                        guard store.saveScore(id, hole: holeIndex, score: draftScore, expected: expected) else { return }
                         if holeIndex + 1 < round.holes.count, let latest = store.round(id) {
                             holeIndex += 1; load(latest.holes[holeIndex])
                         } else { dismiss() }
@@ -181,8 +205,15 @@ struct ScoreEntry: View {
                     } label: { Label("GPS距離", systemImage: "location") }
                     puttControls
                     #endif
+                    NavigationLink {
+                        ClubEditor(clubs: $clubs, strokes: strokes)
+                    } label: { Text("使用クラブ（任意） \(draftScore.clubsRecorded)/\(strokes)打") }
+                    if clubs.dropFirst(strokes).contains(where: { $0 != nil }) {
+                        Text("減らした打数のクラブ記録は保存時に除かれます。")
+                            .font(.caption).foregroundStyle(.orange)
+                    }
                     Button("保存して閉じる") {
-                        if store.saveScore(id, hole: holeIndex, score: Score(strokes: strokes, putts: includePutts ? putts : nil), expected: expected) { dismiss() }
+                        if store.saveScore(id, hole: holeIndex, score: draftScore, expected: expected) { dismiss() }
                     }.frame(minHeight: 44)
                     #if os(iOS)
                     Button("PAR・グリーン位置を設定") { showMap = true }
@@ -208,6 +239,15 @@ struct ScoreEntry: View {
             }
         }
     }
+    private var draftScore: Score {
+        let selected = Array(clubs.prefix(strokes))
+        return Score(strokes: strokes, putts: includePutts ? putts : nil,
+                     clubs: selected.contains(where: { $0 != nil }) ? selected : nil)
+    }
+    private static func clubDraft(_ score: Score?) -> [Club?] {
+        let saved = score?.clubs ?? []
+        return saved + Array(repeating: nil, count: max(0, 30 - saved.count))
+    }
     private var entrySpacing: CGFloat {
         #if os(watchOS)
         return 8
@@ -227,6 +267,7 @@ struct ScoreEntry: View {
         putts = hole.score.value?.putts ?? min(2, strokes)
         includePutts = hole.score.value?.putts != nil
         expected = hole.score.revision
+        clubs = Self.clubDraft(hole.score.value)
     }
     private func countButton(_ icon: String, label: String, disabled: Bool, action: @escaping () -> Void) -> some View {
         Button(action: action) { Image(systemName: icon).font(.title3.bold()).frame(width: 44, height: 44).background(Color.white.opacity(0.12), in: Circle()) }
