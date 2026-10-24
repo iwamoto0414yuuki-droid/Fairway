@@ -1,0 +1,31 @@
+name: Build Windows Watch information helper
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build:
+    if: github.event.repository.private == false
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install pymobiledevice3==11.44.0 pyinstaller==6.16.0
+      - run: python tools/watch-support/watch_info.py --self-test
+      - run: python -m PyInstaller --noconfirm --onefile --console --name Fairway-WatchInfo tools/watch-support/watch_info.py
+      - name: Check packaged imports without a device
+        run: ./dist/Fairway-WatchInfo.exe --self-test
+      - name: Dependency record
+        run: python -m pip freeze > dist/dependencies.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Fairway-WatchInfo-Windows
+          path: |
+            dist/Fairway-WatchInfo.exe
+            dist/dependencies.txt
+            tools/watch-support/watch_info.py
+          if-no-files-found: error
+          retention-days: 7
