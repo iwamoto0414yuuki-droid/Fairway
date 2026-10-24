@@ -2,6 +2,8 @@
 
 2026-10-24、配布ガイド04のインストール中に、InvalidCompanionAppBundleIdentifierが報告された。汎用IPAのWatch参照先が元のiPhone IDのままで、SideStoreが再署名で付与したアカウント別サフィックスに一致していなかった。
 
+**その後、ID修正版でiPhoneは起動したが、Watch側は整合性エラーで導入できないと報告された。ID修正だけでは導入完了に至らない。Watch用の署名・プロファイルを扱う別経路の検討は [署名状況の調査](WATCH_SIGNING_STATUS.md) を参照。**
+
 [AppleのWKCompanionAppBundleIdentifier仕様](https://developer.apple.com/documentation/bundleresources/information-property-list/wkcompanionappbundleidentifier) と、[SideStoreの再署名処理](https://github.com/SideStore/SideStore/blob/develop/SideStore/Core/Operations/PipelineOperations/ResignAppOperation.swift) を参照。
 
 ## 対応

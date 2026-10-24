@@ -2,6 +2,8 @@
 
 対象: iPhone 16e / Apple Watch Series 7。初版はiOS 17以上・watchOS 10以上。現時点では実機でのSideStore再署名・Watch導入は未検証です。
 
+**実機報告：iPhone側は起動した一方、Watch側は整合性エラーで導入失敗。通常のSideStore＋ID修正版でWatchまで導入できることは確認できていません。Windows向けの次の候補は [Watch署名状況](docs/WATCH_SIGNING_STATUS.md) を参照してください。**
+
 0.2.0は前半・後半・全体のスコア／パット集計と、任意の一打ごとのクラブ記録を追加した更新版です。
 
 ## 0.1.0からの更新

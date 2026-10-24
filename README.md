@@ -6,6 +6,8 @@
 
 ローカル配布ファイルは `release/Fairway-0.2.0-unsigned.ipa`（582,670 bytes）、[導入手順](INSTALL.md)、[検証結果](docs/RESULTS.md)。
 
+**実機導入の状況：iPhone版は起動したとの報告がありますが、Watch版は整合性エラーで導入失敗。SideStore向けID修正だけでは解決していません。** Windowsで試す次の候補と限界は [Watch署名状況](docs/WATCH_SIGNING_STATUS.md) を参照してください。
+
 ![Watchのスコア入力（40mmシミュレーター）](docs/images/native-watch.png)
 
 ## 実装した機能
