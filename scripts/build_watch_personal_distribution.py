@@ -59,7 +59,7 @@ PAGES = [
         ('p', 'GPS距離・地図・打点位置・運動計測・常時測位は含めていません。常時通信やポーリングもしません。過去データとの互換性のため、旧版で保存した項目はデータから消さず、今回の画面では使いません。'),
         ('h', '無料アカウントの期限更新'),
         ('p', '期限が切れる前に、この改修版SideStoreからFairwayをRefreshします。Watchを含むアプリは、iPhone向けprofileの注入だけで終わらず、Watchの個別署名を含む再導入処理を実行する設計です。初回成功後も、更新後にWatchで起動できるかを実機で確認してください。'),
-        ('p', '以後のFairwayの改修は、小さいFairwayのIPAだけを更新します。SideStore側の修正が必要な場合に限り、SideStoreの試験版も更新します。通常版SideStoreへ戻した場合のWatch更新は保証できません。'),
+        ('p', '以後のFairwayの改修は、小さいFairwayのIPAだけを更新します。SideStore側の修正が必要な場合に限り、SideStoreの試験版も更新します。通常版SideStoreへ戻した場合のWatch更新は保証できません。SideStore自体の通常版・Nightlyへの更新は、Watch対応が外れる可能性があるため更新前に確認してください。'),
         ('h', '出典・ソース'),
         ('link', ('SideStoreの元ソース', 'https://github.com/SideStore/SideStore')),
         ('link', ('個人用の改修・ビルド手順', 'https://github.com/iwamoto0414yuuki-droid/Fairway/tree/main/tools/watch-support')),
@@ -74,6 +74,8 @@ def build():
         'SideStore-Watch-personal-source.zip': ROOT/'release/watch-personal/SideStore-Watch-personal-source.zip',
         'SideStore-Watch-build.json': ROOT/'release/watch-personal/SideStore-Watch-build.json',
         'Fairway-0.3.0-unsigned.ipa': ROOT/'release/Fairway-0.3.0-unsigned.ipa',
+        'Fairway-0.3.0-source.zip': ROOT/'release/Fairway-0.3.0-source.zip',
+        'Fairway-verification.json': ROOT/'release/verification-0.3.0.json',
         'Fairway-WatchInfo.exe': ROOT/'build/watch-info-verified/dist/Fairway-WatchInfo.exe',
         'WatchInfo-dependencies.txt': ROOT/'build/watch-info-verified/dist/dependencies.txt',
     }
@@ -86,6 +88,16 @@ def build():
     for path in (ROOT/'release/watch-info-source').iterdir():
         if path.is_file(): shutil.copyfile(path, OUT/path.name)
     shutil.copyfile(ROOT/'tools/watch-support/SOURCE.md', OUT/'SOURCE-and-notices.md')
+    helper = OUT/'Fairway-WatchInfo.exe'
+    (OUT/'WatchInfo-verification.json').write_text(json.dumps({
+        'source_commit':'5e41ddb',
+        'run_url':'https://github.com/iwamoto0414yuuki-droid/Fairway/actions/runs/40139494914',
+        'sha256':hashlib.sha256(helper.read_bytes()).hexdigest(),
+        'packaged_import_self_test_passed':True,
+        'physical_watch_read_verified':False,
+        'windows_code_signature':'NotSigned',
+        'apple_account_login_required':False,
+    },indent=2)+'\n',encoding='utf-8')
     guide.OUT = OUT; guide.PAGES = PAGES
     guide.GUIDE_NAME = '01_Watch導入手順'; guide.GUIDE_BANNER = 'FAIRWAY 0.3.0 / Watch対応SideStore 個人用試験版'
     guide.CHECKED_DATE = '2026-10-25'
