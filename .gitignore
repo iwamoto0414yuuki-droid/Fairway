@@ -1,0 +1,7 @@
+build/
+release/
+*.xcodeproj/
+.DS_Store
+__pycache__/
+.swiftpm/
+*.xcuserstate

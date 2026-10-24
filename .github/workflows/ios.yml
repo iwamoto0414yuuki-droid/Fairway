@@ -1,0 +1,60 @@
+name: Test and build Fairway
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: fairway-build
+  cancel-in-progress: false
+jobs:
+  build:
+    # A public repository must be explicitly approved before publication.
+    # Never silently consume a private repository's paid macOS allowance.
+    if: github.event.repository.private == false
+    runs-on: macos-15
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - run: brew install xcodegen
+      - run: xcodegen generate
+      - name: Choose available iPhone simulator
+        run: |
+          python3 - <<'PY'
+          import json, os, subprocess
+          devices = json.loads(subprocess.check_output(['xcrun', 'simctl', 'list', 'devices', 'available', '-j']))['devices']
+          phones = [d for runtime, group in devices.items() if 'iOS' in runtime for d in group if d.get('isAvailable') and 'iPhone' in d['name']]
+          if not phones:
+              raise SystemExit('No simulator available; native tests cannot be skipped')
+          with open(os.environ['GITHUB_ENV'], 'a') as f:
+              f.write('SIMULATOR_ID=' + phones[0]['udid'] + '\n')
+          PY
+      - run: xcrun simctl bootstatus "$SIMULATOR_ID" -b
+      - name: Native tests
+        run: |
+          set -euo pipefail
+          mkdir -p build
+          xcodebuild -project Fairway.xcodeproj -scheme Fairway -configuration Debug \
+            -destination "platform=iOS Simulator,id=$SIMULATOR_ID" -derivedDataPath build/simulator \
+            -parallel-testing-enabled NO CODE_SIGNING_ALLOWED=NO test 2>&1 | tee build/native-tests.log
+      - name: Device build and IPA
+        run: bash scripts/build_ipa.sh
+      - name: Export native screenshots
+        run: |
+          RESULT_BUNDLE=$(find build/simulator/Logs/Test -maxdepth 1 -name '*.xcresult' -print -quit)
+          xcrun xcresulttool export attachments --path "$RESULT_BUNDLE" --output-path build/screenshots
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Fairway-0.1.0-SideStore
+          path: |
+            build/Fairway-0.1.0-unsigned.ipa
+            build/Fairway-0.1.0-unsigned.ipa.sha256
+            build/native-tests.log
+            build/screenshots/
+          if-no-files-found: error
+          retention-days: 3
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Fairway-build-diagnostics
+          path: build/*.log
+          retention-days: 3
