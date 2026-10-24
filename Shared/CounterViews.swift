@@ -118,29 +118,31 @@ struct ScoreEntry: View {
     }
     var body: some View {
         GeometryReader { geometry in
-            VStack(spacing: 5) {
+            let height = max(1, min(360, geometry.size.height - 16))
+            VStack(spacing: height * 0.02) {
                 HStack(spacing: 5) {
                     counterButton("−", label: "打数を1減らす", disabled: draft.strokes == 0) { edit { $0.changeStroke(-1) } }
                     counterButton("−", label: "パットを1減らす", disabled: draft.putts == 0) { edit { $0.changePutt(-1) } }
                         .frame(width: geometry.size.width * 0.29)
-                }
+                }.frame(height: height * 0.2)
                 HStack(alignment: .firstTextBaseline, spacing: 4) {
-                    Text("\(draft.strokes)").font(.system(size: min(geometry.size.height * 0.44, 100), weight: .medium, design: .rounded))
+                    Text("\(draft.strokes)").font(.system(size: min(height * 0.32, 100), weight: .medium, design: .rounded))
                         .frame(maxWidth: .infinity).accessibilityLabel("打数 \(draft.strokes)")
-                    Text("\(draft.putts)").font(.system(size: min(geometry.size.height * 0.28, 62), weight: .medium, design: .rounded))
+                    Text("\(draft.putts)").font(.system(size: min(height * 0.24, 62), weight: .medium, design: .rounded))
                         .frame(width: geometry.size.width * 0.29).accessibilityLabel("パット数 \(draft.putts)")
-                }.monospacedDigit().minimumScaleFactor(0.6).frame(maxHeight: .infinity)
+                }.monospacedDigit().minimumScaleFactor(0.6).frame(height: height * 0.4)
                 HStack(spacing: 5) {
                     counterButton("＋", label: "打数を1増やす", disabled: draft.strokes >= 30) { edit { $0.changeStroke(1) } }
                     counterButton("＋", label: "パットを1増やす（打数も増えます）", disabled: draft.strokes >= 30) { edit { $0.changePutt(1) } }
                         .frame(width: geometry.size.width * 0.29)
-                }
+                }.frame(height: height * 0.2)
                 NavigationLink {
                     ClubEditor(clubs: Binding(get: { draft.clubs }, set: { clubs in edit { $0.clubs = clubs } }), strokes: draft.strokes)
                 } label: { Text("クラブ（任意）").font(.caption2) }
+                .buttonStyle(.plain).frame(maxWidth: .infinity).frame(height: height * 0.14)
                 .disabled(draft.strokes == 0)
             }
-            .padding(.bottom, 15)
+            .frame(height: height)
         }
         #if os(iOS)
         .frame(minHeight: 360, maxHeight: 470).padding()
@@ -156,7 +158,7 @@ struct ScoreEntry: View {
         }
     }
     private func counterButton(_ text: String, label: String, disabled: Bool, action: @escaping () -> Void) -> some View {
-        Button(action: action) { Text(text).font(.title2).bold().frame(maxWidth: .infinity, minHeight: 36) }
+        Button(action: action) { Text(text).font(.title3).bold().frame(maxWidth: .infinity, maxHeight: .infinity) }
             .buttonStyle(.plain).background(Color(white: 0.14), in: RoundedRectangle(cornerRadius: 9))
             .disabled(disabled).opacity(disabled ? 0.4 : 1).accessibilityLabel(label)
     }
