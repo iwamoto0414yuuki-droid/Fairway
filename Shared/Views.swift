@@ -148,10 +148,14 @@ struct ScoreEntry: View {
         if let round = store.round(id), round.holes.indices.contains(holeIndex) {
             let hole = round.holes[holeIndex]
             ScrollView {
-                VStack(spacing: 16) {
+                VStack(spacing: entrySpacing) {
+                    #if os(iOS)
                     Text("HOLE \(hole.id)  ·  PAR \(hole.par.value)").font(.headline).foregroundStyle(fairwayGreen)
+                    #endif
                     if let error = store.error { Text(error).font(.caption).foregroundStyle(.orange) }
+                    #if os(iOS)
                     DistanceView(target: hole.green.value).id("\(id)-\(holeIndex)")
+                    #endif
                     VStack(spacing: 8) {
                         Text("打数（罰打込み）").font(.caption).foregroundStyle(.secondary)
                         HStack {
@@ -162,15 +166,21 @@ struct ScoreEntry: View {
                             countButton("plus", label: "打数を増やす", disabled: strokes >= 30) { strokes += 1 }
                         }
                     }
-                    Toggle("パット数も記録", isOn: $includePutts).font(.caption)
-                        .onChange(of: includePutts) { _, _ in putts = min(putts, strokes) }
-                    if includePutts { Stepper("パット \(putts)", value: $putts, in: 0...strokes) }
+                    #if os(iOS)
+                    puttControls
+                    #endif
                     Button(holeIndex + 1 < round.holes.count ? "保存して次へ" : "保存してカードへ") {
                         guard store.saveScore(id, hole: holeIndex, score: Score(strokes: strokes, putts: includePutts ? putts : nil), expected: expected) else { return }
                         if holeIndex + 1 < round.holes.count, let latest = store.round(id) {
                             holeIndex += 1; load(latest.holes[holeIndex])
                         } else { dismiss() }
                     }.buttonStyle(.borderedProminent).foregroundStyle(.black).frame(minHeight: 44)
+                    #if os(watchOS)
+                    NavigationLink {
+                        ScrollView { DistanceView(target: hole.green.value).padding(8) }.navigationTitle("GPS距離")
+                    } label: { Label("GPS距離", systemImage: "location") }
+                    puttControls
+                    #endif
                     Button("保存して閉じる") {
                         if store.saveScore(id, hole: holeIndex, score: Score(strokes: strokes, putts: includePutts ? putts : nil), expected: expected) { dismiss() }
                     }.frame(minHeight: 44)
@@ -184,14 +194,32 @@ struct ScoreEntry: View {
                     Text("保存するまでは変更は確定しません。")
                         .font(.caption2).foregroundStyle(.secondary)
                     Button("変更せず閉じる") { dismiss() }
-                }.padding(.vertical, 12).padding(.horizontal, 8)
+                }.padding(.vertical, 8).padding(.horizontal, 8)
             }
+            #if os(iOS)
             .navigationTitle("スコア")
+            #else
+            .navigationTitle("\(hole.id)H · PAR\(hole.par.value)")
+            #endif
             .confirmationDialog("このホールの記録を取り消しますか？", isPresented: $clearConfirmation, titleVisibility: .visible) {
                 Button("未入力に戻す", role: .destructive) {
                     if store.saveScore(id, hole: holeIndex, score: nil, expected: expected) { dismiss() }
                 }
             }
+        }
+    }
+    private var entrySpacing: CGFloat {
+        #if os(watchOS)
+        return 8
+        #else
+        return 16
+        #endif
+    }
+    private var puttControls: some View {
+        VStack(spacing: 8) {
+            Toggle("パット数も記録", isOn: $includePutts).font(.caption)
+                .onChange(of: includePutts) { _, _ in putts = min(putts, strokes) }
+            if includePutts { Stepper("パット \(putts)", value: $putts, in: 0...strokes) }
         }
     }
     private func load(_ hole: Hole) {

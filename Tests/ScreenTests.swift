@@ -18,7 +18,11 @@ final class ScreenTests: XCTestCase {
     }
     private func snapshot<V: View>(_ view: V, name: String) {
         let controller = UIHostingController(rootView: view.tint(fairwayGreen).preferredColorScheme(.dark))
-        let window = UIWindow(frame: CGRect(x: 0, y: 0, width: 390, height: 844))
+        guard let scene = UIApplication.shared.connectedScenes.compactMap({ $0 as? UIWindowScene }).first else {
+            XCTFail("A connected UIWindowScene is required for a native screenshot"); return
+        }
+        let window = UIWindow(windowScene: scene)
+        window.frame = CGRect(x: 0, y: 0, width: 390, height: 844)
         window.rootViewController = controller; window.makeKeyAndVisible()
         controller.view.frame = window.bounds; controller.view.layoutIfNeeded()
         RunLoop.main.run(until: Date().addingTimeInterval(0.3))
@@ -26,6 +30,19 @@ final class ScreenTests: XCTestCase {
             window.drawHierarchy(in: window.bounds, afterScreenUpdates: true)
         }
         XCTAssertGreaterThan(image.size.width, 0)
+        if let cg = image.cgImage, let bytes = cg.dataProvider?.data,
+           let pointer = CFDataGetBytePtr(bytes) {
+            var colors = Set<UInt32>()
+            for y in stride(from: 0, to: cg.height, by: 7) {
+                for x in stride(from: 0, to: cg.width, by: 7) {
+                    let offset = y * cg.bytesPerRow + x * 4
+                    if offset + 3 < CFDataGetLength(bytes) {
+                        colors.insert(UInt32(pointer[offset]) << 16 | UInt32(pointer[offset + 1]) << 8 | UInt32(pointer[offset + 2]))
+                    }
+                }
+            }
+            XCTAssertGreaterThan(colors.count, 16, "Blank or unrendered screenshot: \(name)")
+        } else { XCTFail("Could not inspect rendered pixels") }
         let attachment = XCTAttachment(image: image); attachment.name = name; attachment.lifetime = .keepAlways
         add(attachment); window.isHidden = true
     }
