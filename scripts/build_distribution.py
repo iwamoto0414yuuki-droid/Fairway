@@ -27,6 +27,8 @@ RELEASE = ROOT / 'release'
 OUT = RELEASE / '配布用_Fairway_0.2.0_Windows'
 IPA_NAME = 'Fairway-0.2.0-full.ipa'
 GUIDE_NAME = '02_導入手順_Windows'
+GUIDE_BANNER = 'FAIRWAY 0.2.0  /  Windows 導入ガイド'
+CHECKED_DATE = '2026-10-24'
 EXPECTED = '5a9786d519dc59ed9adaccbdc65e982b787b69c99ee635aa9b71ebdade07ec66'
 SOURCES = [
     ('S1', 'SideStore：事前準備（Windows条件・必要ソフト）', 'https://docs.sidestore.io/docs/installation/prerequisites'),
@@ -180,7 +182,7 @@ def pdf():
     def frame(canvas, document):
         canvas.setFont('MeiryoGuide', 8)
         canvas.setFillColor(colors.HexColor('#68766b'))
-        canvas.drawString(48, 817, 'FAIRWAY 0.2.0  /  Windows 導入ガイド')
+        canvas.drawString(48, 817, GUIDE_BANNER)
         canvas.drawRightString(547, 25, f'{document.page} / {len(PAGES)}')
         canvas.drawString(48, 25, '確認日 2026-10-24')
     doc = SimpleDocTemplate(str(OUT / f'{GUIDE_NAME}.pdf'), pagesize=A4, leftMargin=48, rightMargin=48, topMargin=48, bottomMargin=44, title='Fairway 導入手順 Windows', author='Fairway')
@@ -199,8 +201,8 @@ def word():
     for name in ['Title','Heading 1','Heading 2']: doc.styles[name].font.color.rgb=RGBColor.from_string('276343')
     doc.styles['Title'].font.size=Pt(21); doc.styles['Heading 2'].font.size=Pt(12)
     doc.styles['Heading 2'].paragraph_format.space_before=Pt(10)
-    sec.header.paragraphs[0].text='FAIRWAY 0.2.0  /  Windows 導入ガイド'
-    footer=sec.footer.paragraphs[0]; footer.text='確認日 2026-10-24　 /　'
+    sec.header.paragraphs[0].text=GUIDE_BANNER
+    footer=sec.footer.paragraphs[0]; footer.text=f'確認日 {CHECKED_DATE}　 /　'
     field=OxmlElement('w:fldSimple'); field.set(qn('w:instr'),'PAGE'); footer._p.append(field)
     doc.core_properties.title='Fairway 導入手順 Windows'; doc.core_properties.author='Fairway'
     for page, (title, blocks) in enumerate(PAGES):

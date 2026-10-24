@@ -39,7 +39,11 @@ struct HomeView: View {
 struct RoundView: View {
     @EnvironmentObject var store: Store
     let id: UUID
-    @State private var selected = 0
+    @AppStorage private var selected: Int
+    init(id: UUID) {
+        self.id = id
+        _selected = AppStorage(wrappedValue: 0, "FairwaySelectedHole-" + id.uuidString)
+    }
     var body: some View {
         if let round = store.round(id) {
             #if os(watchOS)

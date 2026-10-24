@@ -25,6 +25,10 @@ with zipfile.ZipFile(source, 'w', zipfile.ZIP_DEFLATED) as archive:
         if path.suffix in {'.ipa', '.p12', '.mobileprovision'} or path.name == 'CodeSigning.xcconfig':
             continue
         archive.write(path, 'SideStore/'+relative.as_posix())
+    here = Path(__file__).resolve().parent
+    for path in here.rglob('*'):
+        if path.is_file() and '__pycache__' not in path.parts:
+            archive.write(path, 'PersonalBuild/'+path.relative_to(here).as_posix())
 report = {'sideStore_base': 'd97ec133719d79916675bdaf722b82a8d091d545',
           'sideSign_base': '752d1ef602aa792a432ffa1e71646dc1ecf7363c',
           'ipa_sha256': hashlib.sha256(dest.read_bytes()).hexdigest(),

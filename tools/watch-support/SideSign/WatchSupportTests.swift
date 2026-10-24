@@ -67,4 +67,47 @@ final class WatchSupportTests: XCTestCase {
         try FileManager.default.createSymbolicLink(at: watch, withDestinationURL: external)
         XCTAssertThrowsError(try WatchBundleSupport.applications(in: app))
     }
+
+    #if os(macOS)
+    func testNestedWatchReceivesItsOwnSignedEntitlements() async throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let app = try host(at: root)
+        func command(_ executable: String, _ arguments: [String]) throws -> Data {
+            let process = Process()
+            process.executableURL = URL(fileURLWithPath: executable)
+            process.arguments = arguments
+            let output = Pipe(); let errors = Pipe()
+            process.standardOutput = output; process.standardError = errors
+            try process.run()
+            let data = output.fileHandleForReading.readDataToEndOfFile()
+            let error = errors.fileHandleForReading.readDataToEndOfFile()
+            process.waitUntilExit()
+            guard process.terminationStatus == 0 else {
+                throw WatchSupportError.invalid("Offline fixture command failed: " + String(decoding: error, as: UTF8.self))
+            }
+            return data
+        }
+        let source = root.appendingPathComponent("fixture.c")
+        try Data("int main(void) { return 0; }".utf8).write(to: source)
+        let phoneSDK = String(decoding: try command("/usr/bin/xcrun", ["--sdk", "iphoneos", "--show-sdk-path"]), as: UTF8.self).trimmingCharacters(in: .whitespacesAndNewlines)
+        let watchSDK = String(decoding: try command("/usr/bin/xcrun", ["--sdk", "watchos", "--show-sdk-path"]), as: UTF8.self).trimmingCharacters(in: .whitespacesAndNewlines)
+        _ = try command("/usr/bin/xcrun", ["clang", "-target", "arm64-apple-ios17.0", "-isysroot", phoneSDK, source.path, "-o", app.fileURL.appendingPathComponent("Fixture").path])
+        let watchURL = app.fileURL.appendingPathComponent("Watch/Watch.app")
+        _ = try command("/usr/bin/xcrun", ["clang", "-target", "arm64_32-apple-watchos10.0", "-isysroot", watchSDK, source.path, "-o", watchURL.appendingPathComponent("Fixture").path])
+        let key = root.appendingPathComponent("fixture-key.pem")
+        let cert = root.appendingPathComponent("fixture-cert.pem")
+        let p12 = root.appendingPathComponent("fixture.p12")
+        _ = try command("/usr/bin/openssl", ["req", "-x509", "-newkey", "rsa:2048", "-nodes", "-days", "1", "-subj", "/CN=Offline Watch Test/OU=" + team, "-keyout", key.path, "-out", cert.path])
+        _ = try command("/usr/bin/openssl", ["pkcs12", "-export", "-inkey", key.path, "-in", cert.path, "-out", p12.path, "-passout", "pass:fixture"])
+        let identity = try KeyStore(p12Data: Data(contentsOf: p12), password: "fixture")
+        let signer = AppBundleSigner(team: Team(identifier: team, name: "Offline", type: .free), keyStore: identity)
+        try await signer.signApp(at: app.fileURL, provisioningProfiles: [profile(platform: "iOS", bundle: "local.test"), profile()])
+        let watchEntitlements = try command("/usr/bin/codesign", ["-d", "--entitlements", ":-", watchURL.path])
+        let values = try XCTUnwrap(PropertyListSerialization.propertyList(from: watchEntitlements, options: [], format: nil) as? [String: Any])
+        XCTAssertEqual(values["application-identifier"] as? String, team + ".local.test.watch")
+        // Verifies nested Mach-O signatures and resource seals; this is not Apple provisioning approval.
+        _ = try command("/usr/bin/codesign", ["--verify", "--deep", "--strict", app.fileURL.path])
+    }
+    #endif
 }

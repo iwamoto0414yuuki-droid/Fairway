@@ -42,9 +42,10 @@ def apply(store, sign):
     replace(store, path, '        let appExtensions = targetAppBundle.appExtensions',
             '        let watches = try WatchBundleSupport.applications(in: targetAppBundle)\n'
             '        if !watches.isEmpty {\n'
-            '            guard context.overrideProvisioningProfile == nil, !context.useMainProfile else {\n'
-            '                throw WatchSupportError.invalid("Watchを含むアプリではUse Main Profileと手動profile指定は利用できません。個別署名を選択してください。")\n'
+            '            guard context.overrideProvisioningProfile == nil else {\n'
+            '                throw WatchSupportError.invalid("Watchを含むアプリには専用profileの自動取得が必要です。手動profileの指定を解除してください。")\n'
             '            }\n'
+            '            context.useMainProfile = false\n'
             '        }\n'
             '        let appExtensions = targetAppBundle.appExtensions')
     replace(store, path, '        var profiles = [effectiveBundleId: profile]',
@@ -79,6 +80,19 @@ def apply(store, sign):
             '                    NavigationLink("Watch対応", destination: WatchSupportSettingsView())\n'
             '                }\n'
             '                Section(header: Text("Developer Portal Services")) {')
+    # Phone-only refresh injects profiles into the iPhone, not its paired Watch.
+    # Re-sign/reinstall the embedded companion instead, retaining normal app data.
+    path = 'SideStore/Core/Operations/PipelineRunner.swift'
+    replace(store, path,
+            '    private func performPipeline(for operation: AppOperation, handler: PipelineExecutionHandler, group: RefreshGroup, operationsCount: Int = 1) async throws -> InstalledApp\n    {\n        let pipelineSteps',
+            '    private func performPipeline(for requestedOperation: AppOperation, handler: PipelineExecutionHandler, group: RefreshGroup, operationsCount: Int = 1) async throws -> InstalledApp\n    {\n'
+            '        let operation: AppOperation\n'
+            '        if case .refresh(let app) = requestedOperation, let host = ALTApplication(fileURL: app.fileURL), !((try WatchBundleSupport.applications(in: host)).isEmpty) {\n'
+            '            operation = .resign(app)\n'
+            '        } else { operation = requestedOperation }\n'
+            '        let pipelineSteps')
+    replace(store, path, '        let operationProgress = progress.progress(for: operation)',
+            '        let operationProgress = progress.progress(for: requestedOperation)')
 
 
 if __name__ == '__main__':

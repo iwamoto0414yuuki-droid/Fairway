@@ -32,12 +32,12 @@ struct WatchSupportSettingsView: View {
     @State private var message = ""
     @State private var busy = false
     var body: some View {
-        Form {
+        SwiftUI.Form {
             Section("Watch対応・個人用試験版") {
                 Text("既存のログインと証明書を利用します。無料アカウントでのWatch実機導入は検証中です。")
                 TextField("WatchのUDID", text: $udid)
                     .textInputAutocapitalization(.never).autocorrectionDisabled()
-                Button("Watchの登録を確認") { register() }.disabled(busy)
+                SwiftUI.Button("Watchの登録を確認") { register() }.disabled(busy)
                 if busy { ProgressView() }
                 if !message.isEmpty { Text(message).font(.footnote) }
             }
