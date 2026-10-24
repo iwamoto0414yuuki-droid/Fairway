@@ -43,4 +43,6 @@
 
 [Apple: watchOS project](https://developer.apple.com/documentation/watchos-apps/setting-up-a-watchos-project)、[Bundle ID設定](https://help.apple.com/xcode/mac/current/en.lproj/deve21d0239c.html)、[XcodeGen仕様](https://github.com/yonaskolb/XcodeGen/blob/master/Docs/ProjectSpec.md) を基に、SwiftUIのiOSアプリとwatchOSアプリの2ターゲットにした。
 
-Windows上にXcode/Swiftは見つからず。既存UTubeMusicはGitHub Actionsの公開リポジトリ＋macos-15でIPAを作成していた。同じビルド経路を用意したが、今回のソース公開とCI実行は未実施。実機では①iPhoneへの導入、②Watchへの導入、③同期、④GPS、⑤省電力を別々に判定する。
+Windows上にXcode/Swiftは見つからず。既存UTubeMusicと同じ、GitHub Actionsの公開リポジトリ＋macos-15でIPAを作成した。公開とCI実行はユーザーの承認を得て実施し、ネイティブ20テストと実機向けビルドに成功。実機では①iPhoneへの導入、②Watchへの導入、③同期、④GPS、⑤省電力を別々に判定する。
+
+画面確認後、Watchでは打数と保存を先頭へ置き、GPSを専用画面から開く配置に調整した。40mmシミュレーターで主要入力が初期表示内に収まることを確認した。iPhoneの3画面も描画して確認済み。詳細は [検証結果](RESULTS.md)。

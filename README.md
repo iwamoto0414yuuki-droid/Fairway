@@ -1,8 +1,12 @@
 # Fairway — iPhone / Apple Watch ゴルフスコア
 
-2026-10-24 初版ソース。対象は iPhone 16e と Apple Watch Series 7。iOS 17以上 / watchOS 10以上を仮の最低要件としています。実機のOSバージョンは未確認です。
+2026-10-24 初版0.1.0。対象は iPhone 16e と Apple Watch Series 7。最低要件はiOS 17 / watchOS 10。実機のOSバージョンは未確認です。
 
-**現段階は実装済みソースで、ビルド・実機動作・バッテリー消費は未検証です。インストール用IPAはまだ生成していません。**
+**ネイティブテスト20件・失敗0件、iPhoneとWatchの実機向けビルドが成功し、Watch同梱の未署名IPAを生成しました。** [成功したビルド](https://github.com/iwamoto0414yuuki-droid/Fairway/actions/runs/40087585760)。実機でのSideStore導入・端末間同期・GPS・電池消費は未検証です。
+
+ローカル配布ファイルは `release/Fairway-0.1.0-unsigned.ipa`（508,840 bytes）、[導入手順](INSTALL.md)、[検証結果](docs/RESULTS.md)。
+
+![Watchのスコア入力（40mmシミュレーター）](docs/images/native-watch.png)
 
 ## 実装した機能
 
@@ -21,14 +25,14 @@ GPSは常時更新しません。位置未登録・権限拒否・取得失敗�
 1. iPhoneで「ラウンドをはじめる」→ コース名・9/18ホール。
 2. 各ホールを開き「PAR・グリーン位置を設定」。検索でゴルフ場へ移動し、航空写真を拡大してグリーン中央をタップ→保存。初期PARは全ホール4なので必ず実際の値へ変更。
 3. Watchにラウンドが届いたら開く。届かない場合、両端末でアプリを開き、iPhoneのラウンド内で「このラウンドを再送」。WatchConnectivityは即時到着を保証しません。
-4. 「スコアを入力」→必要なら「距離を更新」→打数の−/＋→「保存して次へ」。画面は縦スクロールできます。閉じる前に必ず保存してください。
+4. 「スコアを入力」→打数の−/＋→「保存して次へ」。Watchの距離確認は「GPS距離」から開いて「距離を更新」。画面は縦スクロールできます。閉じる前に必ず保存してください。
 5. ラウンド終了時にカードを確認して終了。未入力がある場合も確認して終了できます。
 
 距離は手動登録位置への測定時点の概算です。ピンの実位置や高低差は反映しません。GPS精度が50mを超える場合や15秒より古い測位結果は表示しません。50m以下でも測定誤差があるため表示された精度を確認してください。2km以上離れた登録先は距離の代わりに位置確認を表示します。
 
 ## Macでの確認
 
-XcodeとXcodeGenが必要です。既存UTubeMusicと同様にGitHub ActionsのMacでも実行可能ですが、**ユーザーの承認を得て今回のソース公開とCI実行を進めています**。
+XcodeとXcodeGenが必要です。ユーザーの承認を得て[公開リポジトリ](https://github.com/iwamoto0414yuuki-droid/Fairway)を作成し、GitHub ActionsのMacでビルド・テストしました。
 
 ```sh
 brew install xcodegen
@@ -59,6 +63,6 @@ GitHub Actions定義は `.github/workflows/ios.yml`。公開リポジトリの�
 
 ## 検証
 
-`Tests/CoreTests.swift` に20件: 合計・未入力・境界・距離計算・重複/順序逆転/同時編集/取消の同期・JSON往復・転送サイズ。実行にはXcodeが必要です。Windowsではネイティブテストが成功したとは扱いません。
+テストは合計20件です。`CoreTests.swift` の15件は合計・未入力・境界・距離計算・重複/順序逆転/同時編集/取消の同期・JSON往復・転送サイズ、`StoreTests.swift` の4件は保存・再読込・古い編集の拒否・破損データ保護・コース再利用、`ScreenTests.swift` の1件はiPhoneの3画面描画を検証します。画像は空白でないことも確認します。実行にはXcodeが必要です。
 
 詳しい調査は [調査と設計](docs/RESEARCH.md)、実機確認は [検証計画](docs/VALIDATION.md)。
