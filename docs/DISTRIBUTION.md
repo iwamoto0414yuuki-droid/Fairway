@@ -15,6 +15,8 @@ WindowsでSideStore未導入の人向けに、最新版0.2.0の完全版IPAと�
 
 SideStore公式資料を2026-10-24に確認し、iloader＋LocalDevVPNの現行ルートで記述。WatchへのSideStore経由の実機導入は未検証であることを案内した。出典リンクは文書内に掲載している。
 
+その後、04で再署名後のWatch参照ID不一致が報告されたため、ガイドに対処を追記。対象アカウントのサフィックスを指定すると、修正IPAと専用のPDF・Word配布セットを別名で生成できるようにした。汎用セットのIPAがすべてのSideStoreアカウントでそのまま導入できるとは扱わない。[対応方針](SIDESTORE_WATCH.md)。
+
 生成は `scripts/build_distribution.py`。PDF全7ページを画像で目視確認し、Wordのページ区切り・リンク構造を確認。ZIPの破損チェック、IPAが1本のみであること、元の検証済みIPAとのSHA256一致を検査した。
 
 IPA SHA256:

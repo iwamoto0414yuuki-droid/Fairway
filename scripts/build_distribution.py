@@ -3,6 +3,7 @@ Requires python-docx, reportlab and the native screenshots in release/.
 No personal account, certificate, pairing file or round data is distributed.
 """
 from pathlib import Path
+import argparse
 import hashlib
 import json
 import shutil
@@ -93,6 +94,7 @@ PAGES = [
         ('h', '2　SideStoreでIPAを選ぶ'),
         ('p', 'Wi-FiとLocalDevVPNに接続。SideStore → My Apps → ＋からIPAを選びます。完了するとホーム画面にFairwayが追加されます。IPAをタップするだけではインストールされません。'),
         ('p', 'Watchや付属機能を除去する確認が出た場合、Watchを残す必要があります。選択内容が分からなければ、その画面を控えて確認してください。'),
+        ('p', 'InvalidCompanionAppBundleIdentifierが出た場合は、エラー内で要求されたiPhoneアプリIDに合わせたIPAが必要です。そのエラー文を作成者へ伝え、修正版を受け取って同じ手順で再試行します。SideStore初期設定のやり直しは不要です。'),
         ('h', '3　Watchへの導入を確認する'),
         ('p', 'iPhoneの「Watch」アプリを開き、Fairwayが表示されたらインストールします。iPhone・Watchの両方でFairwayを起動してください。Watch側で開発者モード等の案内が出た場合は、端末の案内に従います。'),
         ('box', 'Watch用アプリはIPAに同梱済みですが、SideStoreから実機Watchへ入ることは未確認です。候補が表示されない・失敗する場合は、エラー文とOSバージョンを作成者へ伝えてください。'),
@@ -220,9 +222,27 @@ def word():
     doc.save(OUT/f'{GUIDE_NAME}.docx')
 
 
-def build():
+def build(team_id=None):
+    global OUT, IPA_NAME, EXPECTED
     source=RELEASE/'Fairway-0.2.0-unsigned.ipa'
     assert hashlib.sha256(source.read_bytes()).hexdigest()==EXPECTED
+    verification=RELEASE/'verification.json'
+    suffix=''
+    account_note=''
+    if team_id:
+        from build_sidestore_ipa import prepare
+        prepare(team_id)
+        suffix='_'+team_id
+        source=RELEASE/('SideStore_'+team_id)/('Fairway-0.2.0-SideStore-'+team_id+'.ipa')
+        verification=source.parent/'verification.json'
+        EXPECTED=hashlib.sha256(source.read_bytes()).hexdigest()
+        IPA_NAME=source.name
+        OUT=RELEASE/('配布用_Fairway_0.2.0_Windows'+suffix)
+        account_note='このIPAはSideStoreがiPhone側IDを local.fairway.score.'+team_id+' にするアカウント専用です。別のApple Accountにはそのまま使わず、エラーに出た必要IDを作成者へ伝えてください。'
+        PAGES[0][1].insert(1,('box',account_note))
+        for _,blocks in PAGES:
+            for index,(kind,content) in enumerate(blocks):
+                if isinstance(content,str):blocks[index]=(kind,content.replace('Fairway-0.2.0-full.ipa',IPA_NAME))
     OUT.mkdir(exist_ok=True)
     shutil.copyfile(source,OUT/IPA_NAME)
     pdf(); word()
@@ -236,7 +256,7 @@ def build():
             elif kind=='h': chunks.append('### '+content+'\n')
             else: chunks.append(content+'\n')
     (OUT/'02_導入手順_Windows.md').write_text('\n'.join(chunks),encoding='utf-8')
-    (OUT/'01_はじめに.txt').write_text('''Fairway 0.2.0 配布セット（Windows向け）
+    welcome='''Fairway 0.2.0 配布セット（Windows向け）
 
 初版本体と追加機能は、同梱の最新版IPAにすべて入っています。
 初回の人も、このIPAだけをインストールしてください。
@@ -250,14 +270,18 @@ def build():
 PDFとWordは同じ手順です。アプリ本体は1本だけです。
 SideStore等の他社インストーラー・署名情報・個人のスコアは含みません。
 WatchのSideStore経由での実機導入と電池消費は未検証です。
-''',encoding='utf-8-sig')
+'''
+    (OUT/'01_はじめに.txt').write_text(welcome.replace('Fairway-0.2.0-full.ipa',IPA_NAME)+'\n'+account_note+'\n',encoding='utf-8-sig')
     (OUT/'SHA256.txt').write_text(EXPECTED+'  '+IPA_NAME+'\n',encoding='ascii')
-    shutil.copyfile(RELEASE/'verification.json',OUT/'検証記録.json')
-    archive=RELEASE/'Fairway-0.2.0-Windows-配布セット.zip'
+    shutil.copyfile(verification,OUT/'検証記録.json')
+    archive=RELEASE/('Fairway-0.2.0-Windows-配布セット'+suffix+'.zip')
     with zipfile.ZipFile(archive,'w',zipfile.ZIP_DEFLATED) as z:
         for file in sorted(OUT.iterdir()):
             if file.is_file(): z.write(file,OUT.name+'/'+file.name)
     print(json.dumps({'folder':str(OUT),'zip':str(archive),'ipa_sha256':EXPECTED,'zip_bytes':archive.stat().st_size},ensure_ascii=False,indent=2))
 
 
-if __name__=='__main__': build()
+if __name__=='__main__':
+    parser=argparse.ArgumentParser()
+    parser.add_argument('--team-id')
+    build(parser.parse_args().team_id)

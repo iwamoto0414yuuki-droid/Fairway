@@ -21,6 +21,8 @@
 
 SideStoreで再署名した後も、Watch側の `WKCompanionAppBundleIdentifier` がiPhone側の `CFBundleIdentifier` と一致し、Watch自身のIDがiPhone IDの配下になっている必要があります。今回のIPA作成スクリプトは再署名前の整合を検査しますが、SideStoreの再署名後の挙動は実機で別途確認が必要です。
 
+**04でInvalidCompanionAppBundleIdentifierが出た場合**：アカウント別の再署名後IDにWatchの参照先が合っていないため、エラーに示された必要IDに合わせた修正版IPAを受け取り、同じSideStoreの＋から再試行します。SideStoreの再設定やアプリ削除は不要です。アカウント専用IPAを別のApple Accountへ流用しないでください。詳細は [Watch参照IDエラーへの対応](docs/SIDESTORE_WATCH.md)。
+
 無料Apple Accountのアプリ枠や更新期限は[SideStore公式FAQ](https://docs.sidestore.io/docs/faq)を確認してください。既存のUTubeMusicを削除する必要があると決めつけず、まず使用中の枠を確認します。
 
 ## 最初にコースを準備する
