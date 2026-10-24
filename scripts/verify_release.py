@@ -6,6 +6,7 @@ import plistlib
 import re
 import sys
 import zipfile
+from finalize_metadata import finalize
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -26,6 +27,9 @@ def verify(artifact: Path, run_id: str, commit: str):
     digest = hashlib.sha256(ipa.read_bytes()).hexdigest()
     expected = ipa.with_suffix('.ipa.sha256').read_text().split()[0]
     assert digest == expected, 'IPA digest does not match CI'
+    packaging = finalize(ipa)
+    digest = hashlib.sha256(ipa.read_bytes()).hexdigest()
+    ipa.with_suffix('.ipa.sha256').write_text(digest + '  ' + ipa.name + '\n', encoding='utf-8')
     log = (release / 'native-tests.log').read_text(encoding='utf-8')
     assert '** TEST SUCCEEDED **' in log, 'Native tests did not succeed'
     assert re.search(r'Executed 30 tests, with 0 failures', log), 'Expected 30 passing native tests'
@@ -38,9 +42,14 @@ def verify(artifact: Path, run_id: str, commit: str):
         assert watch['WKCompanionAppBundleIdentifier'] == phone['CFBundleIdentifier']
         assert watch['CFBundleIdentifier'].startswith(phone['CFBundleIdentifier'] + '.')
         for prefix, info in [('Payload/Fairway.app/', phone), (watch_path, watch)]:
+            assert info['CFBundleShortVersionString'] == '0.2.0', 'Unexpected app version'
+            assert info['CFBundleVersion'] == '2', 'Unexpected build number'
             executable = app.read(prefix + info['CFBundleExecutable'])
             assert executable[:4] in [bytes.fromhex(h) for h in ['cffaedfe', 'cefaedfe', 'cafebabe', 'bebafeca']], 'Not a Mach-O binary'
     result = {
+        'version': '0.2.0',
+        'build': '2',
+        **packaging,
         'run_url': f'https://github.com/iwamoto0414yuuki-droid/Fairway/actions/runs/{run_id}',
         'tested_source_commit': commit,
         'sha256': digest,

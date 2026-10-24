@@ -1,10 +1,10 @@
 # Fairway — iPhone / Apple Watch ゴルフスコア
 
-2026-10-24 初版0.1.0。対象は iPhone 16e と Apple Watch Series 7。最低要件はiOS 17 / watchOS 10。実機のOSバージョンは未確認です。
+2026-10-24 更新版0.2.0。対象は iPhone 16e と Apple Watch Series 7。最低要件はiOS 17 / watchOS 10。実機のOSバージョンは未確認です。
 
-**ネイティブテスト20件・失敗0件、iPhoneとWatchの実機向けビルドが成功し、Watch同梱の未署名IPAを生成しました。** [成功したビルド](https://github.com/iwamoto0414yuuki-droid/Fairway/actions/runs/40087585760)。実機でのSideStore導入・端末間同期・GPS・電池消費は未検証です。
+**ネイティブテスト30件・失敗0件、iPhoneとWatchの実機向けビルドが成功し、Watch同梱の未署名IPAを生成しました。** [成功したビルド](https://github.com/iwamoto0414yuuki-droid/Fairway/actions/runs/40089461199)。実機でのSideStore導入・端末間同期・GPS・電池消費は未検証です。
 
-ローカル配布ファイルは `release/Fairway-0.1.0-unsigned.ipa`（508,840 bytes）、[導入手順](INSTALL.md)、[検証結果](docs/RESULTS.md)。
+ローカル配布ファイルは `release/Fairway-0.2.0-unsigned.ipa`（582,670 bytes）、[導入手順](INSTALL.md)、[検証結果](docs/RESULTS.md)。
 
 ![Watchのスコア入力（40mmシミュレーター）](docs/images/native-watch.png)
 
@@ -12,6 +12,8 @@
 
 - 9 / 18ホールのラウンド作成、打数、任意のパット数、罰打込みの入力。
 - ホール別修正、入力取消、未入力を除いた合計・対パー、終了・再開・履歴。
+- 前半（1〜9H）・後半（10〜18H）・全体のスコアとパット合計。未記録と0パットを区別。
+- 一打ごとの使用クラブを任意で記録。クラブ編集はGPS・通信を開始せず、スコア保存時にまとめて同期。
 - iPhoneでコース検索、航空写真をタップして各グリーン中央を登録、PARの設定。
 - Watch / iPhoneの「距離を更新」で単発GPS測位、グリーン中央までの直線距離（yd）。
 - 測定時刻・報告精度を表示。最大20秒で測位を打ち切り、画面を離れると停止。
@@ -63,6 +65,8 @@ GitHub Actions定義は `.github/workflows/ios.yml`。公開リポジトリの�
 
 ## 検証
 
-テストは合計20件です。`CoreTests.swift` の15件は合計・未入力・境界・距離計算・重複/順序逆転/同時編集/取消の同期・JSON往復・転送サイズ、`StoreTests.swift` の4件は保存・再読込・古い編集の拒否・破損データ保護・コース再利用、`ScreenTests.swift` の1件はiPhoneの3画面描画を検証します。画像は空白でないことも確認します。実行にはXcodeが必要です。
+テストは合計30件です。`CoreTests.swift` の15件は合計・未入力・境界・距離計算・重複/順序逆転/同時編集/取消の同期・JSON往復・転送サイズ、`StoreTests.swift` の4件は保存・再読込・古い編集の拒否・破損データ保護・コース再利用、`ScreenTests.swift` の1件はiPhoneの4画面描画を検証します。UpdateTests.swiftの10件は前後半・パット集計、旧版データ互換、クラブの保存と同期、CSVと転送サイズを検証します。画像は空白でないことも確認します。実行にはXcodeが必要です。
+
+0.2.0の操作と互換性は [更新内容](docs/UPDATE_0.2.0.md)。既存アプリは削除せず上書きし、iPhone・Watchを両方更新してください。
 
 詳しい調査は [調査と設計](docs/RESEARCH.md)、実機確認は [検証計画](docs/VALIDATION.md)。

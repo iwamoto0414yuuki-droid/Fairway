@@ -23,6 +23,8 @@ targets:
       path: build/iPhone-Info.plist
       properties:
         CFBundleDisplayName: Fairway
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         UILaunchScreen: {}
         NSLocationWhenInUseUsageDescription: 距離を更新したときだけ、グリーン中央までの距離を測定します。
         UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
@@ -43,6 +45,8 @@ targets:
       path: build/Watch-Info.plist
       properties:
         CFBundleDisplayName: Fairway
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         WKApplication: true
         WKCompanionAppBundleIdentifier: local.fairway.score
         WKRunsIndependentlyOfCompanionApp: true
