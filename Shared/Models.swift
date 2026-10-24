@@ -61,7 +61,9 @@ struct Round: Codable, Equatable, Identifiable {
     }
     var total: Int { holes.compactMap { $0.score.value?.strokes }.reduce(0, +) }
     var played: Int { holes.filter { $0.score.value != nil }.count }
-    var relative: Int { holes.reduce(0) { $0 + ($1.score.value.map { $0.strokes - $1.par.value } ?? 0) } }
+    var relative: Int {
+        holes.reduce(0) { total, hole in total + (hole.score.value.map { score in score.strokes - hole.par.value } ?? 0) }
+    }
     var relativeText: String { relative == 0 ? "E" : String(format: "%+d", relative) }
     var maxCounter: Int { (holes.flatMap(\.revisions) + [finished.revision]).map(\.counter).max() ?? 0 }
     var isValid: Bool {

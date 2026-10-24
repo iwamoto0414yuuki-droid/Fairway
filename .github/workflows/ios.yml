@@ -42,6 +42,9 @@ jobs:
         run: |
           RESULT_BUNDLE=$(find build/simulator/Logs/Test -maxdepth 1 -name '*.xcresult' -print -quit)
           xcrun xcresulttool export attachments --path "$RESULT_BUNDLE" --output-path build/screenshots
+      - name: Watch simulator preview
+        timeout-minutes: 6
+        run: python3 scripts/watch_preview.py
       - uses: actions/upload-artifact@v4
         with:
           name: Fairway-0.1.0-SideStore
@@ -50,6 +53,8 @@ jobs:
             build/Fairway-0.1.0-unsigned.ipa.sha256
             build/native-tests.log
             build/screenshots/
+            build/native-watch.png
+            build/watch-preview-device.json
           if-no-files-found: error
           retention-days: 3
       - if: failure()

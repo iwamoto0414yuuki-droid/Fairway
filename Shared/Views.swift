@@ -150,6 +150,7 @@ struct ScoreEntry: View {
             ScrollView {
                 VStack(spacing: 16) {
                     Text("HOLE \(hole.id)  ·  PAR \(hole.par.value)").font(.headline).foregroundStyle(fairwayGreen)
+                    if let error = store.error { Text(error).font(.caption).foregroundStyle(.orange) }
                     DistanceView(target: hole.green.value).id("\(id)-\(holeIndex)")
                     VStack(spacing: 8) {
                         Text("打数（罰打込み）").font(.caption).foregroundStyle(.secondary)
