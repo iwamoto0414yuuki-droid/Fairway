@@ -1,4 +1,5 @@
 import XCTest
+import CodeSignKit
 @testable import SideSign
 
 final class WatchSupportTests: XCTestCase {
@@ -103,7 +104,9 @@ final class WatchSupportTests: XCTestCase {
         let identity = try KeyStore(p12Data: Data(contentsOf: p12), password: "fixture")
         let signer = AppBundleSigner(team: Team(identifier: team, name: "Offline", type: .free), keyStore: identity)
         try await signer.signApp(at: app.fileURL, provisioningProfiles: [profile(platform: "iOS", bundle: "local.test"), profile()])
-        let watchEntitlements = try command("/usr/bin/codesign", ["-d", "--entitlements", ":-", watchURL.path])
+        let rawEntitlements = try MachOParser.entitlements(at: watchURL)
+        XCTAssertFalse(rawEntitlements.isEmpty, "Watch executable has no entitlements after signing")
+        let watchEntitlements = try command("/usr/bin/codesign", ["--display", "--entitlements", "-", "--xml", watchURL.path])
         let values = try XCTUnwrap(PropertyListSerialization.propertyList(from: watchEntitlements, options: [], format: nil) as? [String: Any])
         XCTAssertEqual(values["application-identifier"] as? String, team + ".local.test.watch")
         // Verifies nested Mach-O signatures and resource seals; this is not Apple provisioning approval.
