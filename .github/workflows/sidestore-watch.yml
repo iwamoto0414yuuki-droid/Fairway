@@ -1,0 +1,56 @@
+name: Build personal SideStore Watch experiment
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: sidestore-watch-personal
+  cancel-in-progress: false
+jobs:
+  build:
+    if: github.event.repository.private == false
+    runs-on: macos-26
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: SideStore/SideStore
+          ref: d97ec133719d79916675bdaf722b82a8d091d545
+          submodules: recursive
+          path: build/SideStore
+      - name: Apply personal Watch changes
+        run: python3 tools/watch-support/apply.py build/SideStore build/SideStore/Dependencies/SideSign
+      - name: Install packaging tool
+        run: brew install ldid
+      - name: Watch bundle and profile regression tests
+        working-directory: build/SideStore/Dependencies/SideSign
+        run: |
+          set -o pipefail
+          swift test --filter WatchSupportTests 2>&1 | tee ../../../watch-tests.log
+      - name: Build without an Apple Account
+        working-directory: build/SideStore
+        run: |
+          set -o pipefail
+          make build 2>&1 | tee ../sidestore-watch-build.log
+          make fakesign ipa
+      - name: Package unsigned experiment and corresponding source
+        run: python3 tools/watch-support/package.py build/SideStore
+      - uses: actions/upload-artifact@v4
+        with:
+          name: SideStore-Watch-personal-experiment
+          path: |
+            build/SideStore-Watch-personal.ipa
+            build/SideStore-Watch-personal-source.zip
+            build/SideStore-Watch-build.json
+            build/watch-tests.log
+          if-no-files-found: error
+          retention-days: 7
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: SideStore-Watch-build-diagnostics
+          path: |
+            build/sidestore-watch-build.log
+            build/watch-tests.log
+          retention-days: 3

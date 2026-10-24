@@ -1,0 +1,93 @@
+// Personal experimental Watch support. See SOURCE.md for upstream and license.
+import Foundation
+
+public enum WatchSupportError: LocalizedError {
+    case invalid(String)
+    public var errorDescription: String? {
+        switch self { case .invalid(let message): return message }
+    }
+}
+
+public enum WatchBundleSupport {
+    public static func applications(in host: AppBundle) throws -> [AppBundle] {
+        let directory = host.fileURL.appendingPathComponent("Watch")
+        guard FileManager.default.fileExists(atPath: directory.path) else { return [] }
+        let root = host.fileURL.resolvingSymlinksInPath().path + "/"
+        let children = try FileManager.default.contentsOfDirectory(at: directory, includingPropertiesForKeys: nil, options: .skipsHiddenFiles)
+        return try children.filter { $0.pathExtension == "app" }.sorted { $0.path < $1.path }.map { url in
+            guard url.resolvingSymlinksInPath().path.hasPrefix(root), let app = AppBundle(fileURL: url),
+                  app.infoPlist["WKCompanionAppBundleIdentifier"] as? String == host.bundleIdentifier,
+                  app.bundleIdentifier.hasPrefix(host.bundleIdentifier + ".") else {
+                throw WatchSupportError.invalid("Watchアプリの構成または親子IDが一致していません。元の完全版IPAを使用してください。")
+            }
+            return app
+        }
+    }
+
+    public static func identifier(_ child: String, from original: String, to rewritten: String) throws -> String {
+        guard child.hasPrefix(original + ".") else {
+            throw WatchSupportError.invalid("WatchのBundle IDがiPhoneアプリの配下にありません。")
+        }
+        return rewritten + child.dropFirst(original.count)
+    }
+
+    public static func validateUDID(_ text: String) throws -> String {
+        let value = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        let oldStyle = value.range(of: "^[a-fA-F0-9]{40}$", options: .regularExpression) != nil
+        let newStyle = value.range(of: "^[a-fA-F0-9]{8}-[a-fA-F0-9]{16}$", options: .regularExpression) != nil
+        guard oldStyle || newStyle else {
+            throw WatchSupportError.invalid("WatchのUDIDを入力してください。シリアル番号とは異なります。")
+        }
+        return value
+    }
+
+    public static func validate(_ profile: ProvisioningProfile, bundleID: String, teamID: String, udid: String, now: Date = Date()) throws {
+        let dictionary = try ProvisioningProfile.dictionary(fromEncodedData: profile.data)
+        let platforms = dictionary["Platform"] as? [String] ?? []
+        guard platforms.contains(where: { $0.caseInsensitiveCompare("watchOS") == .orderedSame }),
+              profile.bundleIdentifier == bundleID, profile.teamIdentifier == teamID,
+              profile.deviceIDs.contains(where: { $0.caseInsensitiveCompare(udid) == .orderedSame }),
+              profile.expirationDate > now else {
+            throw WatchSupportError.invalid("取得したWatch用プロファイルの端末・ID・期限・Platformが一致しません。インストールを停止しました。")
+        }
+    }
+}
+
+public extension AppBundle {
+    var watchApplications: [AppBundle] { (try? WatchBundleSupport.applications(in: self)) ?? [] }
+    var watchSigningBundles: [AppBundle] {
+        watchApplications.flatMap { [$0] + Array($0.appExtensions).sorted { $0.fileURL.path < $1.fileURL.path } }
+    }
+}
+
+public extension DeveloperPortal {
+    // Existing SideStore sessions are supplied by the caller; this does not authenticate or revoke certificates.
+    func registerWatch(name: String, udid: String, team: Team, session: Session) async throws {
+        let udid = try WatchBundleSupport.validateUDID(udid)
+        let listed: ListDevicesResponse = try await sendRequest(url: Constants.URLs.listDevices,
+            additionalParameters: ["DTDK_Platform": "watchos"], session: session, team: team)
+        if listed.devices?.contains(where: { $0.identifier.caseInsensitiveCompare(udid) == .orderedSame }) == true { return }
+        let _: DeviceResponse = try await sendRequest(url: Constants.URLs.addDevice,
+            additionalParameters: ["DTDK_Platform": "watchos", "deviceNumber": udid, "name": name], session: session, team: team)
+    }
+
+    func watchProfile(bundleID: String, name: String, team: Team, session: Session) async throws -> ProvisioningProfile {
+        let list: ListAppIDsResponse = try await sendRequest(url: Constants.URLs.listAppIDs,
+            additionalParameters: ["DTDK_Platform": "watchos"], session: session, team: team)
+        let appID: AppID
+        if let existing = list.appIds?.first(where: { $0.bundleIdentifier == bundleID }) {
+            appID = existing
+        } else {
+            let added: AppIDResponse = try await sendRequest(url: Constants.URLs.addAppID,
+                additionalParameters: ["DTDK_Platform": "watchos", "name": name, "identifier": bundleID], session: session, team: team)
+            guard let value = added.appId else { throw WatchSupportError.invalid("Watch用App IDを取得できませんでした。") }
+            appID = value
+        }
+        let result: ProfileResponse = try await sendRequest(url: Constants.URLs.downloadProvisioningProfile,
+            additionalParameters: ["DTDK_Platform": "watchos", "appIdId": appID.identifier], session: session, team: team)
+        guard let profile = try result.provisioningProfile?.toProvisioningProfile() else {
+            throw WatchSupportError.invalid("Watch用プロファイルを取得できませんでした。")
+        }
+        return profile
+    }
+}

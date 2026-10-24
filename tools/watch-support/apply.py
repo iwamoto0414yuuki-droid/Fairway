@@ -1,0 +1,83 @@
+"""Apply narrow, fail-closed Watch support changes to pinned personal source trees."""
+from pathlib import Path
+import shutil
+import sys
+
+OVERLAYS = Path(__file__).resolve().parent
+
+
+def replace(root, path, before, after):
+    target = root / path
+    text = target.read_text(encoding='utf-8')
+    assert text.count(before) == 1, f'Unexpected upstream source: {path}: {before[:60]}'
+    target.write_text(text.replace(before, after), encoding='utf-8', newline='\n')
+
+
+def apply(store, sign):
+    shutil.copyfile(OVERLAYS/'SideSign/WatchBundleSupport.swift', sign/'Sources/Models/WatchBundleSupport.swift')
+    shutil.copyfile(OVERLAYS/'SideSign/WatchSupportTests.swift', sign/'Tests/SideSignTests/WatchSupportTests.swift')
+    shutil.copyfile(OVERLAYS/'SideStore/WatchSupportSettings.swift', store/'SideStore/Core/WatchSupportSettings.swift')
+    replace(sign, 'Sources/Models/ProvisioningProfile.swift',
+            'private static func dictionary(fromEncodedData', 'static func dictionary(fromEncodedData')
+    replace(sign, 'Sources/Models/AppBundle.swift',
+            '[self] + Array(appExtensions).sorted', '[self] + watchSigningBundles + Array(appExtensions).sorted')
+    path = 'Sources/CodeSigning/CodeSignerAPI.swift'
+    replace(sign, path, '        var entitlementsByURL: [URL: String] = [:]',
+            '        _ = try WatchBundleSupport.applications(in: appBundle)\n'
+            '        var entitlementsByURL: [URL: String] = [:]')
+    replace(sign, path, 'return profiles.first',
+            'return appBundle.watchSigningBundles.contains(where: { $0.fileURL == app.fileURL }) ? nil : profiles.first')
+    replace(sign, path, 'for ext in appBundle.appExtensions {',
+            'for ext in Array(appBundle.appExtensions) + appBundle.watchSigningBundles {')
+    replace(sign, path, 'appBundle.appExtensions.first(where: { ext in',
+            '(Array(appBundle.appExtensions) + appBundle.watchSigningBundles).sorted { $0.fileURL.path.count > $1.fileURL.path.count }.first(where: { ext in')
+    # Frameworks and dylibs inside Watch apps must not receive Watch executable entitlements.
+    replace(sign, path, '} else if let matchedExt = ',
+            '} else if resolved.path.contains(".framework") || resolved.pathExtension == "dylib" {\n'
+            '                            targetType = .framework; xml = ""\n'
+            '                        } else if let matchedExt = ')
+    path = 'SideStore/Core/Operations/PipelineOperations/FetchProvisioningProfilesOperation.swift'
+    replace(store, path, '        let appExtensions = targetAppBundle.appExtensions',
+            '        let watches = try WatchBundleSupport.applications(in: targetAppBundle)\n'
+            '        if !watches.isEmpty {\n'
+            '            guard context.overrideProvisioningProfile == nil, !context.useMainProfile else {\n'
+            '                throw WatchSupportError.invalid("Watchを含むアプリではUse Main Profileと手動profile指定は利用できません。個別署名を選択してください。")\n'
+            '            }\n'
+            '        }\n'
+            '        let appExtensions = targetAppBundle.appExtensions')
+    replace(store, path, '        var profiles = [effectiveBundleId: profile]',
+            '        var profiles = [effectiveBundleId: profile]\n'
+            '        if !watches.isEmpty {\n'
+            '            guard let certificate = context.targetSigningCertificate else { throw WatchSupportError.invalid("署名証明書がありません。") }\n'
+            '            let watchProfiles = try await WatchSupportSettings.prepare(host: targetAppBundle, hostProfile: profile, certificate: certificate)\n'
+            '            profiles.merge(watchProfiles) { _, new in new }\n'
+            '        }')
+    path = 'SideStore/Core/Operations/PipelineOperations/ResignAppOperation.swift'
+    replace(store, path, '        return appBundleURL\n    }',
+            '        let watches = try WatchBundleSupport.applications(in: targetAppBundle)\n'
+            '        if !watches.isEmpty {\n'
+            '            guard let hostProfile = profiles[bundleIdentifier] else { throw WatchSupportError.invalid("iPhone用profileがありません。") }\n'
+            '            for original in targetAppBundle.watchSigningBundles {\n'
+            '                let relative = String(original.fileURL.path.dropFirst(targetAppBundle.fileURL.path.count + 1))\n'
+            '                guard let child = ALTApplication(fileURL: appBundleURL.appendingPathComponent(relative)) else { throw WatchSupportError.invalid("Watchアプリを読み込めません。") }\n'
+            '                let newID = try WatchBundleSupport.identifier(original.bundleIdentifier, from: targetAppBundle.bundleIdentifier, to: hostProfile.bundleIdentifier)\n'
+            '                var values: [String: Any] = [:]\n'
+            '                if original.infoPlist["WKCompanionAppBundleIdentifier"] != nil { values["WKCompanionAppBundleIdentifier"] = hostProfile.bundleIdentifier }\n'
+            '                if var ext = original.infoPlist["NSExtension"] as? [String: Any], var attrs = ext["NSExtensionAttributes"] as? [String: Any], let parent = attrs["WKAppBundleIdentifier"] as? String {\n'
+            '                    attrs["WKAppBundleIdentifier"] = try WatchBundleSupport.identifier(parent, from: targetAppBundle.bundleIdentifier, to: hostProfile.bundleIdentifier)\n'
+            '                    ext["NSExtensionAttributes"] = attrs; values["NSExtension"] = ext\n'
+            '                }\n'
+            '                try self.prepare(child, bundleID: newID, additionalInfoDictionaryValues: values, profiles: profiles, appexBundleIds: [:])\n'
+            '            }\n'
+            '        }\n'
+            '        return appBundleURL\n    }')
+    path = 'SideStore/Views/Settings/Advanced/DeveloperServices/DeveloperServicesView.swift'
+    replace(store, path, '                Section(header: Text("Developer Portal Services")) {',
+            '                Section("個人用Watch試験版") {\n'
+            '                    NavigationLink("Watch対応", destination: WatchSupportSettingsView())\n'
+            '                }\n'
+            '                Section(header: Text("Developer Portal Services")) {')
+
+
+if __name__ == '__main__':
+    apply(Path(sys.argv[1]).resolve(), Path(sys.argv[2]).resolve())
