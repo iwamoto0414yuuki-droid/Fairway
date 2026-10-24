@@ -21,6 +21,11 @@ jobs:
           path: build/SideStore
       - name: Apply personal Watch changes
         run: python3 tools/watch-support/apply.py build/SideStore build/SideStore/Dependencies/SideSign
+      - uses: actions/cache/restore@v4
+        with:
+          path: build/SideStore/Dependencies/SideSign/.build
+          key: sidesign-watch-macos26-${{ github.run_id }}
+          restore-keys: sidesign-watch-macos26-
       - name: Install packaging tool
         run: brew install ldid
       - name: Watch bundle and profile regression tests
@@ -54,3 +59,8 @@ jobs:
             build/sidestore-watch-build.log
             build/watch-tests.log
           retention-days: 3
+      - uses: actions/cache/save@v4
+        if: always()
+        with:
+          path: build/SideStore/Dependencies/SideSign/.build
+          key: sidesign-watch-macos26-${{ github.run_id }}

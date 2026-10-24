@@ -17,6 +17,8 @@ def apply(store, sign):
     shutil.copyfile(OVERLAYS/'SideSign/WatchBundleSupport.swift', sign/'Sources/Models/WatchBundleSupport.swift')
     shutil.copyfile(OVERLAYS/'SideSign/WatchSupportTests.swift', sign/'Tests/SideSignTests/WatchSupportTests.swift')
     shutil.copyfile(OVERLAYS/'SideStore/WatchSupportSettings.swift', store/'SideStore/Core/WatchSupportSettings.swift')
+    # The pinned upstream tests use Foundation types without importing Foundation.
+    replace(sign, 'Tests/SideSignTests/SideSignTests.swift', 'import Testing', 'import Foundation\nimport Testing')
     replace(sign, 'Sources/Models/ProvisioningProfile.swift',
             'private static func dictionary(fromEncodedData', 'static func dictionary(fromEncodedData')
     replace(sign, 'Sources/Models/AppBundle.swift',
