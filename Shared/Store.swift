@@ -63,13 +63,13 @@ final class Store: NSObject, ObservableObject, WCSessionDelegate {
         }
         return commit(round) ? round.id : nil
     }
-    @discardableResult func saveScore(_ id: UUID, hole: Int, score: Score?, expected: Revision) -> Bool {
+    @discardableResult func saveScore(_ id: UUID, hole: Int, score: Score?, expected: Revision, send: Bool = true) -> Bool {
         guard var round = round(id), round.holes.indices.contains(hole) else { return false }
         guard round.holes[hole].score.revision == expected else {
             error = "このホールは別の端末で更新されました。いったん戻り、最新の値を確認して入力し直してください。"; return false
         }
         round.holes[hole].score = Value(value: score, revision: revision())
-        return commit(round)
+        return commit(round, send: send)
     }
     @discardableResult func configure(_ id: UUID, hole: Int, par: Int, green: Coordinate?) -> Bool {
         guard var round = round(id), round.holes.indices.contains(hole) else { return false }

@@ -18,7 +18,7 @@ struct ClubEditor: View {
                 Button("クラブ記録をすべて解除", role: .destructive) { confirmClear = true }
             }
             Section {
-                Text("記録したい打だけ選択できます。戻ったあと、スコア画面で保存してください。")
+                Text("記録したい打だけ選択できます。選択した内容は自動保存されます。")
                     .font(.caption).foregroundStyle(.secondary)
                 Text("罰打は「罰打（クラブなし）」を選べます。パット数はスコア画面で別に入力します。")
                     .font(.caption).foregroundStyle(.secondary)
