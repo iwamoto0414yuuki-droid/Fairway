@@ -61,9 +61,9 @@ mod certificate_reuse_tests {
         let pair = KeyPair::from_pkcs8_pem_and_sign_algo(&pem, &PKCS_RSA_SHA256).unwrap();
         let cert = CertificateParams::new(vec![]).unwrap().self_signed(&pair).unwrap();
         let data = plist::Value::Dictionary(plist::Dictionary::from_iter([
-            ("machineId".into(), plist::Value::String("offline".into())),
-            ("machineName".into(), plist::Value::String("original iloader".into())),
-            ("certContent".into(), plist::Value::Data(cert.der().to_vec())),
+            ("machineId".to_string(), plist::Value::String("offline".into())),
+            ("machineName".to_string(), plist::Value::String("original iloader".into())),
+            ("certContent".to_string(), plist::Value::Data(cert.der().to_vec())),
         ]));
         (private, plist::from_value(&data).unwrap())
     }
