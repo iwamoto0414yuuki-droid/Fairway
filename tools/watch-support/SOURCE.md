@@ -9,3 +9,17 @@ The patch overlays and build scripts in this directory are provided under AGPL-3
 Watch developer-service parameter conventions were checked against the independent MIT-licensed implementation at https://github.com/Rzbck/isideload/tree/f7b9f3da570edd6824c29680545e710846d07df5/isideload/src/dev . No credentials, profiles, keys, pairing records, account IDs, or device identifiers belong in source control or build artifacts.
 
 The user explicitly requested that Codex implement this personal derivative. This is not submission of AI-generated contribution content to the upstream SideStore project. Upstream contribution and automated-maintainer-contact restrictions are respected; CI and publication are confined to the user's existing Fairway repository.
+
+## iOS-family profile correction
+
+The recipient's diagnostic showed only a Platform mismatch, with Apple's returned
+array containing iOS and visionOS. Apple's development-profile documentation says
+iOS App Development covers iOS and watchOS apps:
+https://developer.apple.com/help/account/provisioning-profiles/create-a-development-provisioning-profile
+
+The prior literal watchOS requirement rejected this observed profile. The companion
+workflow now explicitly allows an iOS-family array after watch-scoped registration
+and retrieval. A Watch UDID match, exact child bundle ID, team, expiry and current
+signing certificate remain required. Generic validation defaults to rejecting the
+iOS-family alternative. Empty/foreign platform arrays remain rejected. Real-device
+installation/renewal through this modified SideStore still needs validation.

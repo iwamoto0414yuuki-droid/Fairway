@@ -1,5 +1,7 @@
 # Watch用プロファイルの不一致を切り分ける診断版
 
+診断後の追記：利用者の結果はWPF_PLATFORMのみで、OS表記はiOS・visionOSだった。必須にしていたwatchOS文字列の判定を見直した[対応版](WATCH_IOS_FAMILY_PROFILE_FIX.md)を作成した。以下は診断版の作成時点の記録。
+
 2026-10-25。①の改修版SideStoreで、Remote Pairingへ切り替えた後に
 「取得したWatch用プロファイルの端末・ID・期限・Platformが一致しません」が報告された。
 利用者は設定したWatch UDIDとWindowsのWatch情報ツールの値が一致することを確認した。

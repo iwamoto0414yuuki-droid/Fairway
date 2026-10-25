@@ -33,7 +33,7 @@ def verify(artifact, digest, run_url, commit, expected_tests=19,
         assert info['CFBundleIdentifier'] == 'com.SideStore.SideStore'
         binary = ipa.read('Payload/SideStore.app/'+info['CFBundleExecutable'])
         assert b'Lockdown (Windows USB)' in binary
-        if expected_tests == 21:
+        if expected_tests >= 21:
             for code in ['WPF_PLATFORM', 'WPF_APP_ID', 'WPF_TEAM', 'WPF_DEVICE', 'WPF_EXPIRED']:
                 assert code.encode() in binary
     with zipfile.ZipFile(out/'SideStore-Watch-personal-source.zip') as source:
@@ -46,12 +46,18 @@ def verify(artifact, digest, run_url, commit, expected_tests=19,
         assert 'Picker("Pairing Protocol"' in onboarding
         assert 'preferred: selectedPairingProtocol' in onboarding
         assert 'preferredProtocol = selectedPairingProtocol' in onboarding
-        if expected_tests == 21:
+        if expected_tests >= 21:
             watch = source.read('SideStore/Dependencies/SideSign/Sources/Models/WatchBundleSupport.swift').decode()
             assert 'failures.joined(separator:' in watch
             assert 'profile.bundleIdentifier != bundleID' in watch
             assert 'profile.teamIdentifier != teamID' in watch
             assert 'profile.expirationDate <= now' in watch
+            if expected_tests == 26:
+                assert 'allowIOSFamily && normalized.contains("ios")' in watch
+                assert 'normalized.isSubset(of: Set(["ios", "xros", "visionos"]))' in watch
+                settings = source.read(base+'Core/WatchSupportSettings.swift').decode()
+                assert 'udid: udid, allowIOSFamily: true)' in settings
+                assert 'profile.certificates.contains' in settings
         for path in ['Core/Auth/AuthManager.swift', 'Core/Certificates/CertificateManager.swift']:
             pristine = ROOT/'build/watch-sidestore/SideStore/SideStore'/path
             assert source.read(base+path).decode().replace('\r\n', '\n') == pristine.read_text(encoding='utf-8')
@@ -63,11 +69,13 @@ def verify(artifact, digest, run_url, commit, expected_tests=19,
                   auth_certificate_managers_unchanged=True, watch_regression_tests_passed=expected_tests,
                   physical_pairing_import_verified=False, run_url=run_url, source_commit=commit,
                   artifact_sha256=digest)
-    if expected_tests == 21:
+    if expected_tests >= 21:
         report.update(profile_diagnostic_codes_verified=True, physical_profile_diagnosis_verified=False)
-        filename = 'SideStore-Watch-profile-diagnostic.ipa'
+        filename = 'SideStore-Watch-profile-diagnostic.ipa' if expected_tests == 21 else 'SideStore-Watch-ios-family-fix.ipa'
         (out/'SideStore-Watch-personal.ipa').replace(out/filename)
         report['ipa_filename'] = filename
+        if expected_tests == 26:
+            report.update(ios_family_platform_fix=True, physical_fix_verified=False)
     (out/'verification.json').write_text(json.dumps(report, indent=2)+'\n', encoding='utf-8')
     (out/'SHA256.txt').write_text('\n'.join(
         hashlib.sha256(p.read_bytes()).hexdigest()+'  '+p.name
