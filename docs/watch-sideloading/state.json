@@ -27,7 +27,8 @@
     "automatic_refresh_configured": true,
     "automatic_refresh_execution_verified": false,
     "watch_launch_after_old_profile_expiry_verified": false,
-    "comprehensive_score_sync_and_battery_verified": false
+    "comprehensive_score_sync_and_battery_verified": false,
+    "confirmed_app_version": "0.3.0"
   },
   "limitations": [
     "Physical success applies to Fairway on this user environment, not every Watch app.",
@@ -105,5 +106,17 @@
     "native_build_of_template_executed": false,
     "shell_syntax_checked": true,
     "yaml_parser_checked": false
+  },
+  "latest_app_build": {
+    "version": "0.4.0",
+    "file": "release/Fairway-0.4.0-unsigned.ipa",
+    "sha256": "dc22ec33668f9652b56d2a537941a28c3ec3d25ceee68dcf825c60dae8dd76b1",
+    "source_commit": "975267b2c38dce30eaea5d9b0647bdba3999268e",
+    "source_zip": "release/Fairway-0.4.0-source.zip",
+    "source_sha256": "61e79af07e0ebcffb2ae3d6e9af6ee8f0739bbba0773d019d39bd983263bedf5",
+    "ci_run": "https://github.com/iwamoto0414yuuki-droid/Fairway/actions/runs/40195208658",
+    "native_tests": 44,
+    "physical_update_verified": false,
+    "notes": "Signing baseline above remains the physically confirmed 0.3.0; 0.4.0 adds score edit/delete and club-grid UI."
   }
 }

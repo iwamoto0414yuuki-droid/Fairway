@@ -11,7 +11,7 @@ scope: self-built-ios-app-with-embedded-watch-app
 
 ## 現在の到達点
 
-2026-10-25の利用者報告で確認したこと：
+2026-10-25の利用者報告で確認したこと（対象アプリは0.3.0）：
 
 | 項目 | 状態・根拠 |
 | --- | --- |
@@ -33,6 +33,8 @@ scope: self-built-ios-app-with-embedded-watch-app
 4. [失敗・判断・利用者側の操作の履歴](HISTORY.md)
 5. [新しいアプリの構造検査コード](examples/inspect_ipa.py)、[XcodeGenの最小例](examples/project.yml)、[実機ビルドの例](examples/build_unsigned.sh)
 6. [AI向けの再開情報](state.json)
+
+新版0.4.0は別途ビルド・44件テスト・画面確認済み。更新後の実機動作はまだ未確認。[変更内容](../APP_0.4.0.md)とstate.jsonのlatest_app_buildを参照。
 
 ## 今後の基本方針
 
