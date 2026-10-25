@@ -115,7 +115,7 @@ final class WatchSupportTests: XCTestCase {
             let newID = oldID + "." + team
             // Use the production relationship helper, then reload AppBundle to avoid cached plist values.
             for child in app.watchSigningBundles {
-                var info = child.infoPlist
+                var info: [String: Any] = child.infoPlist
                 info["CFBundleIdentifier"] = try WatchBundleSupport.identifier(child.bundleIdentifier, from: oldID, to: newID)
                 let relationships = try WatchBundleSupport.relationships(in: info, from: oldID, to: newID)
                 for (key, value) in relationships { info[key] = value }
