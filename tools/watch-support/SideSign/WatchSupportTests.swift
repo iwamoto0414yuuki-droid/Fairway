@@ -36,11 +36,20 @@ final class WatchSupportTests: XCTestCase {
     func testPrefixCollisionRejected() { XCTAssertThrowsError(try WatchBundleSupport.identifier("local.testing.watch", from: "local.test", to: "new.id")) }
     func testUnrelatedBundleRejected() { XCTAssertThrowsError(try WatchBundleSupport.identifier("other.watch", from: "local.test", to: "new.id")) }
     func testValidWatchProfile() throws { try WatchBundleSupport.validate(profile(), bundleID: "local.test.watch", teamID: team, udid: udid) }
-    func testPhoneProfileCannotSignWatch() throws { XCTAssertThrowsError(try WatchBundleSupport.validate(profile(platform: "iOS"), bundleID: "local.test.watch", teamID: team, udid: udid)) }
-    func testWrongWatchRejected() throws { XCTAssertThrowsError(try WatchBundleSupport.validate(profile(target: "00000000-0000000000000002"), bundleID: "local.test.watch", teamID: team, udid: udid)) }
-    func testExpiredProfileRejected() throws { XCTAssertThrowsError(try WatchBundleSupport.validate(profile(expires: Date().addingTimeInterval(-1)), bundleID: "local.test.watch", teamID: team, udid: udid)) }
-    func testWrongTeamRejected() throws { XCTAssertThrowsError(try WatchBundleSupport.validate(profile(), bundleID: "local.test.watch", teamID: "OTHER", udid: udid)) }
-    func testWrongIDRejected() throws { XCTAssertThrowsError(try WatchBundleSupport.validate(profile(), bundleID: "local.test.wrong", teamID: team, udid: udid)) }
+    func testPhoneProfileCannotSignWatch() throws { XCTAssertThrowsError(try WatchBundleSupport.validate(profile(platform: "iOS"), bundleID: "local.test.watch", teamID: team, udid: udid)) { XCTAssertTrue($0.localizedDescription.contains("WPF_PLATFORM")) } }
+    func testWrongWatchRejected() throws { XCTAssertThrowsError(try WatchBundleSupport.validate(profile(target: "00000000-0000000000000002"), bundleID: "local.test.watch", teamID: team, udid: udid)) { XCTAssertTrue($0.localizedDescription.contains("WPF_DEVICE")) } }
+    func testExpiredProfileRejected() throws { XCTAssertThrowsError(try WatchBundleSupport.validate(profile(expires: Date().addingTimeInterval(-1)), bundleID: "local.test.watch", teamID: team, udid: udid)) { XCTAssertTrue($0.localizedDescription.contains("WPF_EXPIRED")) } }
+    func testWrongTeamRejected() throws { XCTAssertThrowsError(try WatchBundleSupport.validate(profile(), bundleID: "local.test.watch", teamID: "OTHER", udid: udid)) { XCTAssertTrue($0.localizedDescription.contains("WPF_TEAM")) } }
+    func testWrongIDRejected() throws { XCTAssertThrowsError(try WatchBundleSupport.validate(profile(), bundleID: "local.test.wrong", teamID: team, udid: udid)) { XCTAssertTrue($0.localizedDescription.contains("WPF_APP_ID")) } }
+    func testDiagnosticsReportAllFailuresWithoutIdentifiers() throws {
+        let value = try profile(platform: "iOS", target: "00000000-0000000000000002", expires: Date().addingTimeInterval(-60))
+        XCTAssertThrowsError(try WatchBundleSupport.validate(value, bundleID: "private.expected.id", teamID: "OTHER", udid: udid)) { error in
+            let message = error.localizedDescription
+            for code in ["WPF_PLATFORM", "WPF_APP_ID", "WPF_TEAM", "WPF_DEVICE", "WPF_EXPIRED"] { XCTAssertTrue(message.contains(code), code) }
+            for identifier in [self.udid, self.team, "OTHER", "private.expected.id", "local.test.watch", "00000000-0000000000000002"] { XCTAssertFalse(message.contains(identifier), identifier) }
+        }
+    }
+    func testWatchOSPlatformCaseIsIgnored() throws { try WatchBundleSupport.validate(profile(platform: "WATCHOS"), bundleID: "local.test.watch", teamID: team, udid: udid) }
     func testWatchGraph() throws {
         let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         defer { try? FileManager.default.removeItem(at: root) }

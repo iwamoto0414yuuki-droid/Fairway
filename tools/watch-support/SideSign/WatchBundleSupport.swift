@@ -59,11 +59,22 @@ public enum WatchBundleSupport {
     public static func validate(_ profile: ProvisioningProfile, bundleID: String, teamID: String, udid: String, now: Date = Date()) throws {
         let dictionary = try ProvisioningProfile.dictionary(fromEncodedData: profile.data)
         let platforms = dictionary["Platform"] as? [String] ?? []
-        guard platforms.contains(where: { $0.caseInsensitiveCompare("watchOS") == .orderedSame }),
-              profile.bundleIdentifier == bundleID, profile.teamIdentifier == teamID,
-              profile.deviceIDs.contains(where: { $0.caseInsensitiveCompare(udid) == .orderedSame }),
-              profile.expirationDate > now else {
-            throw WatchSupportError.invalid("取得したWatch用プロファイルの端末・ID・期限・Platformが一致しません。インストールを停止しました。")
+        var failures: [String] = []
+        if !platforms.contains(where: { $0.caseInsensitiveCompare("watchOS") == .orderedSame }) {
+            // OS names are public metadata; never expose arbitrary profile values.
+            let known = platforms.compactMap { value -> String? in
+                ["iOS", "watchOS", "tvOS", "macOS", "visionOS"].first { $0.caseInsensitiveCompare(value) == .orderedSame }
+            }.joined(separator: ",")
+            failures.append("WPF_PLATFORM（OS種別: " + (known.isEmpty ? "不明または欠落" : known) + "）")
+        }
+        if profile.bundleIdentifier != bundleID { failures.append("WPF_APP_ID（アプリID）") }
+        if profile.teamIdentifier != teamID { failures.append("WPF_TEAM（チーム）") }
+        if !profile.deviceIDs.contains(where: { $0.caseInsensitiveCompare(udid) == .orderedSame }) {
+            failures.append("WPF_DEVICE（Watch端末）")
+        }
+        if profile.expirationDate <= now { failures.append("WPF_EXPIRED（期限）") }
+        if !failures.isEmpty {
+            throw WatchSupportError.invalid("Watch用プロファイルの検査NG: " + failures.joined(separator: " / ") + "。インストールを停止しました。")
         }
     }
 }
