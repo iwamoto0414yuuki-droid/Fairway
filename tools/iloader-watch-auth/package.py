@@ -17,7 +17,8 @@ exe = app/'src-tauri/target/release/iloader.exe'
 assert exe.is_file() and exe.read_bytes()[:2] == b'MZ'
 shutil.copyfile(exe, out/'Fairway-Watch-Loader.exe')
 log = (root/'auth-tests.log').read_text(encoding='utf-8-sig')
-assert re.search(r'test result: ok\. \d+ passed; 0 failed;', log)
+summary=re.search(r'test result: ok\. (\d+) passed; 0 failed;', log)
+assert summary
 auth = [line for line in log.splitlines() if line.startswith('test ') and 'auth_backport_' in line and line.rstrip().endswith(' ... ok')]
 assert len(auth) == 21, len(auth)
 shutil.copyfile(root/'auth-tests.log',out/'offline-tests.log')
@@ -36,7 +37,7 @@ def add_tree(archive, directory, prefix):
             archive.write(p,prefix+'/'+p.relative_to(directory).as_posix())
 metadata=subprocess.run(['cargo','metadata','--format-version','1','--manifest-path',str(app/'src-tauri/Cargo.toml')],capture_output=True,encoding='utf-8',check=True)
 packages=json.loads(metadata.stdout)['packages']
-with zipfile.ZipFile(source,'w',zipfile.ZIP_DEFLATED) as archive:
+with zipfile.ZipFile(source,'w',zipfile.ZIP_DEFLATED,strict_timestamps=False) as archive:
     add_tree(archive,app,'iloader')
     add_tree(archive,lib,'isideload')
     add_tree(archive,Path(__file__).resolve().parent,'PersonalBuild')
@@ -82,7 +83,7 @@ for manifest in (app/'node_modules').rglob('package.json'):
     'Watch implementation: https://github.com/Rzbck/iloader-watch-companion\n'
     'Personal changes: https://github.com/iwamoto0414yuuki-droid/Fairway/tree/main/tools/iloader-watch-auth\n'
     'Independent experiment; no upstream endorsement. Exact modified source and original notices accompany this EXE.\n',encoding='utf-8-sig')
-report={'ipa_not_required_for_auth_check':True,'auth_backport_tests_passed':len(auth),
+report={'ipa_not_required_for_auth_check':True,'auth_backport_tests_passed':len(auth),'total_library_tests_passed':int(summary.group(1)),
         'exe_sha256':hashlib.sha256((out/'Fairway-Watch-Loader.exe').read_bytes()).hexdigest(),
         'source_sha256':hashlib.sha256(source.read_bytes()).hexdigest(),
         'app_identifier':'local.fairway.watchloader.auth20261025','keyring_service':'fairway-watch-loader-auth-20261025',

@@ -89,6 +89,10 @@ jobs:
           path: |
             build/watch-auth/auth-tests.log
             build/watch-auth/windows-build.log
+            build/watch-auth/dist/*
+            build/watch-auth/iloader/src-tauri/target/release/iloader.exe
+            build/watch-auth/iloader/src-tauri/Cargo.lock
+            build/watch-auth/isideload/Cargo.lock
           retention-days: 3
       - uses: actions/cache/save@v4
         if: always()
