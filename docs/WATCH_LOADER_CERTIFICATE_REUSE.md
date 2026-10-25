@@ -46,3 +46,16 @@ Import IPAには通常の署名・登録・プロファイル取得が必要で�
 Watchの登録・親子ID・プロファイル・転送の元コードは変更しない。証明書識別を扱うcert_identity.rsは今回の変更対象であり、未変更ファイル一覧からは明示的に除外する。
 
 この再利用処理およびWatchでの起動・期限更新は、受け取り側での実機確認が必要。
+
+### 今回の実行結果
+
+- [Windows CI 40174027549](https://github.com/iwamoto0414yuuki-droid/Fairway/actions/runs/40174027549)は成功。
+- ビルド対象コミット：`ec1ca778c1ef345833400fb0ebec9bc05d9ffbfe`。
+- ライブラリ29件成功・失敗0。鍵照合5件、既存認証21件、既存Watch3件。
+- 配布対象EXEをCIで起動し、Fairway Watch Loaderのウィンドウ初期化を確認。
+- 取得後にもEXEの版番号`2.3.1-auth.20261025.2`をWindowsのファイル情報で確認。
+- EXE SHA256：`a86b3648679ae0283b12b5f9677e8fae473b77bff9f6aaa13a37cc176f1c1f4b`。
+- 対応ソースZIP SHA256：`f57e90cad8658f78a26da3990e6e43018d4544a565d0f55b0cdfdd6a1081182f`。
+- 取得成果物のSHA256はGitHubの値`2e16f521b8388bfa72b3a22c462175400981907c3622ae031b6194fa68eea531`と一致。
+- 原版のWatch関連ファイルの未変更ハッシュを、同梱した改修ソースでも照合済み。
+- Windowsコード署名なし。本人の鍵を使う実行は、こちらでは行っていない。

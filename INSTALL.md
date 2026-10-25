@@ -1,6 +1,6 @@
 # Watch対応SideStoreとFairway最小版の導入
 
-2026-10-25追記：SideStoreの改修と別の選択肢として、Windows用の「Fairway Watch Loader」認証更新試験版も作成しました。[検証結果](docs/WATCH_AUTH_LOADER_RESULTS.md)を参照してください。この別経路では、iPhoneのSideStoreを更新せず、Windows側で新しくログインします。配布ZIPの「01_導入手順_認証更新版.pdf」の2ページ目から認証だけを確認します。以下は改修版SideStoreを使う場合の手順です。
+2026-10-25追記：SideStoreの改修と別の選択肢として、Windows用の「Fairway Watch Loader」試験版も作成しました。認証更新後に証明書上限7460が報告されたため、[元の署名鍵の照合・再利用版](docs/WATCH_LOADER_CERTIFICATE_REUSE.md)を追加しました。この別経路では、iPhoneのSideStoreを更新せず、Windows側で新しくログインします。新版ZIPの「01_導入手順_既存証明書再利用版.pdf」に従い、Login後に「通常版iloaderの署名鍵を再利用」を押します。成功してからImport IPAへ進みます。以下は改修版SideStoreを使う場合の手順です。
 
 この手順は、現在のSideStore 0.7系でFairwayのRefreshが成功している利用者向けの個人用試験経路です。Windowsと無料Apple Accountが前提です。実機でのログイン引継ぎ・Watch導入は未確認です。現在のSideStoreとFairwayは削除しないでください。
 

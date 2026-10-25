@@ -71,6 +71,17 @@ def build():
     OUT.mkdir(exist_ok=True)
     for p in source.iterdir():
         if p.is_file():shutil.copyfile(p,OUT/p.name)
+    (OUT/'00_README.txt').write_text(
+        'Fairway Watch Loader / 2.3.1-auth.20261025.2\n'
+        '証明書上限7460への対応：通常版iloaderの既存署名鍵を明示操作で照合・再利用する試験版。\n'
+        '01_導入手順_既存証明書再利用版.pdfを開いてください。\n'
+        '同じApple AccountでLogin → 通常版iloaderの署名鍵を再利用 → 成功後にImport IPA。\n'
+        'Revokeや証明書削除は不要です。元の鍵・証明書は取り消しません。\n'
+        'Don\'t use keyringはオフ。鍵が見つからない・一致しない場合は停止します。\n'
+        'Windowsテスト29件とEXEビルド・CIのGUI起動検査は成功。実機の鍵再利用・Watch導入・期限更新は未確認。\n'
+        'FairwayのIPAは以前と同一です。新しいIPAを作る必要はありません。\n'
+        '04_証明書再利用の説明.mdに新版の検証結果、03_ビルド検証結果.mdに前版の記録があります。\n'
+        '非公式の個人用試験版・Windowsコード署名なし。対応ソースとライセンスを同梱。\n',encoding='utf-8-sig')
     for name in ('Fairway-0.3.0-unsigned.ipa','Fairway-0.3.0-source.zip'):
         shutil.copyfile(ROOT/'release'/name,OUT/name)
     shutil.copyfile(ROOT/'release/verification-0.3.0.json',OUT/'Fairway-verification.json')
