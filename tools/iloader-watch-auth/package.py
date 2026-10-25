@@ -34,7 +34,7 @@ def add_tree(archive, directory, prefix):
             if p.suffix in {'.exe','.p12','.mobileprovision'} or p.name=='.env': continue
             assert p.resolve().is_relative_to(directory)
             archive.write(p,prefix+'/'+p.relative_to(directory).as_posix())
-metadata=subprocess.run(['cargo','metadata','--format-version','1','--manifest-path',str(app/'src-tauri/Cargo.toml')],capture_output=True,text=True,check=True)
+metadata=subprocess.run(['cargo','metadata','--format-version','1','--manifest-path',str(app/'src-tauri/Cargo.toml')],capture_output=True,encoding='utf-8',check=True)
 packages=json.loads(metadata.stdout)['packages']
 with zipfile.ZipFile(source,'w',zipfile.ZIP_DEFLATED) as archive:
     add_tree(archive,app,'iloader')
