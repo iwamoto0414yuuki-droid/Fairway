@@ -117,7 +117,8 @@ final class WatchSupportTests: XCTestCase {
             for child in app.watchSigningBundles {
                 var info = child.infoPlist
                 info["CFBundleIdentifier"] = try WatchBundleSupport.identifier(child.bundleIdentifier, from: oldID, to: newID)
-                info.merge(try WatchBundleSupport.relationships(in: info, from: oldID, to: newID)) { _, new in new }
+                let relationships = try WatchBundleSupport.relationships(in: info, from: oldID, to: newID)
+                for (key, value) in relationships { info[key] = value }
                 try PropertyListSerialization.data(fromPropertyList: info, format: .xml, options: 0).write(to: child.fileURL.appendingPathComponent("Info.plist"))
             }
             var info = app.infoPlist
