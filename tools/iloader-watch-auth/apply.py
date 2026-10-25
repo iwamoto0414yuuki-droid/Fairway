@@ -148,6 +148,15 @@ def apply(app, lib):
         if p.suffix in ('.ts','.tsx'):
             s=p.read_text(encoding='utf-8')
             if '"ani.sidestore.io"' in s:p.write_text(s.replace('"ani.sidestore.io"','"ani.jkcoxson.com"'),encoding='utf-8',newline='\n')
+    p=app/'src/pages/Settings.tsx';s=p.read_text(encoding='utf-8')
+    start=s.index('let anisetteServers = [');end=s.index('\n];',start)+3
+    s=s[:start]+'''let anisetteServers = [
+  ["ani.jkcoxson.com", "Jkcoxson (Mac)"],
+  ["ani.iloader.app", "iloader"],
+  ["ani.sidestore.io", "SideStore (.io)"],
+  ["new.ani.sidestore.io", "SideStore (new)"],
+];''' +s[end:]
+    p.write_text(s,encoding='utf-8',newline='\n')
     replace(app, 'src/AppleID.tsx', '<button type="submit">{t("apple_id.login")}</button>',
             '<p className="settings-hint">個人用Watch試験版です。最初は「認証を確認」だけを実行してください。この操作では証明書の作成・取消やアプリ導入は行いません。</p>\n              <button type="submit">認証を確認（Login）</button>')
     after={p.relative_to(lib).as_posix():hashlib.sha256(p.read_bytes()).hexdigest()
