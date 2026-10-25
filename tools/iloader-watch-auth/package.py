@@ -2,6 +2,7 @@
 from pathlib import Path
 import hashlib
 import json
+import os
 import re
 import shutil
 import subprocess
@@ -25,13 +26,14 @@ notice = []
 source = out/'Fairway-Watch-Loader-source.zip'
 def add_tree(archive, directory, prefix):
     directory=directory.resolve()
-    for p in directory.rglob('*'):
-        if not p.is_file() or p.is_symlink(): continue
-        relative=p.relative_to(directory)
-        if any(x in {'.git','target','node_modules','dist','__pycache__'} for x in relative.parts): continue
-        if p.suffix in {'.exe','.p12','.mobileprovision'} or p.name=='.env': continue
-        assert p.resolve().is_relative_to(directory)
-        archive.write(p,prefix+'/'+relative.as_posix())
+    for folder,dirs,files in os.walk(directory,followlinks=False):
+        dirs[:]=[name for name in dirs if name not in {'.git','target','node_modules','dist','__pycache__'} and not (Path(folder)/name).is_symlink()]
+        for name in files:
+            p=Path(folder)/name
+            if p.is_symlink() or not p.is_file(): continue
+            if p.suffix in {'.exe','.p12','.mobileprovision'} or p.name=='.env': continue
+            assert p.resolve().is_relative_to(directory)
+            archive.write(p,prefix+'/'+p.relative_to(directory).as_posix())
 metadata=subprocess.run(['cargo','metadata','--format-version','1','--manifest-path',str(app/'src-tauri/Cargo.toml')],capture_output=True,text=True,check=True)
 packages=json.loads(metadata.stdout)['packages']
 with zipfile.ZipFile(source,'w',zipfile.ZIP_DEFLATED) as archive:

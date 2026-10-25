@@ -119,6 +119,8 @@ def apply(app, lib):
             'isideload = { path = "../../isideload/isideload", features = ["fs-storage"] }')
     replace(app, 'src-tauri/src/account.rs', '.max_certs_behavior(MaxCertsBehavior::Prompt(Box::new(max_certs_callback)))',
             '.max_certs_behavior(MaxCertsBehavior::Error)')
+    replace(app, 'src-tauri/src/account.rs', '.storage(create_sideloading_storage(app)?)',
+            '.machine_name("Fairway Watch Loader Auth".to_string())\n        .storage(create_sideloading_storage(app)?)')
     p=app/'src-tauri/src/account.rs';s=p.read_text(encoding='utf-8')
     start=s.index('    let max_certs_callback = {');end=s.index('    // TODO: Team Selection',start)
     p.write_text(s[:start]+s[end:], encoding='utf-8', newline='\n')
@@ -132,6 +134,15 @@ def apply(app, lib):
     config.write_text(json.dumps(c,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
     replace(app, 'src/App.tsx', '<h1 className="title">iloader</h1>',
             '<h1 className="title">Fairway Watch Loader</h1>')
+    p=app/'src/App.tsx';s=p.read_text(encoding='utf-8')
+    start=s.index('<div className="action-row single-row">')
+    first=s.index('                <button',start)
+    last=s.index('                <button\n                  onClick={async () => {',first)
+    assert s[first:last].count('<button')==4
+    s=s[:first]+s[last:]
+    s=s.replace('  installSideStoreOperation,\n','').replace('  installLiveContainerOperation,\n','')
+    s=s.replace('{t("app.installers")}','Fairwayを導入').replace('{t("app.choose_build")}','認証成功後にIPAを選択')
+    p.write_text(s,encoding='utf-8',newline='\n')
     # All default server references follow the provider whose metadata was checked.
     for p in (app/'src').rglob('*'):
         if p.suffix in ('.ts','.tsx'):
