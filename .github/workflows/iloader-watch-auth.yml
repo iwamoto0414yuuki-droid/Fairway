@@ -1,0 +1,92 @@
+name: Build isolated Watch iloader auth experiment
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: iloader-watch-auth
+  cancel-in-progress: false
+jobs:
+  windows:
+    if: github.event.repository.private == false
+    runs-on: windows-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: Rzbck/iloader
+          ref: 09332620405e321936b25f0f381256bde08e4f86
+          path: build/watch-auth/iloader
+      - uses: actions/checkout@v4
+        with:
+          repository: Rzbck/isideload
+          ref: 06248a85a1b34ab6278b8849474bef6cc798dcf6
+          path: build/watch-auth/isideload
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Apply auth backport and isolated app identity
+        run: python tools/iloader-watch-auth/apply.py build/watch-auth/iloader build/watch-auth/isideload
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: ilammy/msvc-dev-cmd@v1
+      - name: Native build prerequisites
+        run: choco install strawberryperl make --no-progress
+      - uses: oven-sh/setup-bun@v2
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            build/watch-auth/isideload/target
+            build/watch-auth/iloader/src-tauri/target
+          key: watch-auth-windows-v1-${{ hashFiles('tools/iloader-watch-auth/*.rs') }}
+          restore-keys: watch-auth-windows-v1-
+      - name: Offline authentication and Watch regressions
+        working-directory: build/watch-auth/isideload
+        shell: pwsh
+        run: |
+          cargo test -p isideload --lib --features fs-storage 2>&1 | Tee-Object -FilePath ../auth-tests.log
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Frontend dependencies
+        working-directory: build/watch-auth/iloader
+        run: bun install --frozen-lockfile
+      - name: Build portable EXE without installer or signing credentials
+        working-directory: build/watch-auth/iloader
+        shell: pwsh
+        run: |
+          bun run tauri build --no-bundle 2>&1 | Tee-Object -FilePath ../windows-build.log
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Package portable executable and corresponding source
+        run: python tools/iloader-watch-auth/package.py build/watch-auth
+      - name: Start packaged GUI without an Apple Account
+        shell: pwsh
+        run: |
+          $loaderProcess = Start-Process -FilePath "$PWD/build/watch-auth/dist/Fairway-Watch-Loader.exe" -PassThru -WindowStyle Hidden
+          try {
+            $windowFound = $false
+            for ($attempt = 0; $attempt -lt 40; $attempt++) {
+              Start-Sleep -Milliseconds 500
+              $loaderProcess.Refresh()
+              if ($loaderProcess.HasExited) { throw "GUI exited before readiness" }
+              if ($loaderProcess.MainWindowTitle -like 'Fairway Watch Loader*') { $windowFound = $true; break }
+            }
+            if (-not $windowFound) { throw "GUI window title not observed" }
+            'Packaged GUI window initialized; no account login or device installation attempted' | Set-Content build/watch-auth/dist/gui-smoke.txt
+          } finally {
+            if (-not $loaderProcess.HasExited) { Stop-Process -Id $loaderProcess.Id }
+          }
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Fairway-Watch-Loader-auth-experiment-Windows
+          path: build/watch-auth/dist/*
+          if-no-files-found: error
+          retention-days: 7
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Fairway-Watch-Loader-diagnostics
+          path: |
+            build/watch-auth/auth-tests.log
+            build/watch-auth/windows-build.log
+          retention-days: 3
