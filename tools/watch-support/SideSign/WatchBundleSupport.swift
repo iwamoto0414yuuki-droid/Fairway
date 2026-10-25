@@ -41,6 +41,21 @@ public enum WatchBundleSupport {
         return value
     }
 
+    /// Values shared by the install pipeline and offline real-IPA signing tests.
+    public static func relationships(in info: [String: Any], from original: String, to rewritten: String) throws -> [String: Any] {
+        var values: [String: Any] = [:]
+        if let companion = info["WKCompanionAppBundleIdentifier"] as? String {
+            guard companion == original else { throw WatchSupportError.invalid("Watchの親アプリIDが一致しません。") }
+            values["WKCompanionAppBundleIdentifier"] = rewritten
+        }
+        if var ext = info["NSExtension"] as? [String: Any], var attrs = ext["NSExtensionAttributes"] as? [String: Any], let parent = attrs["WKAppBundleIdentifier"] as? String {
+            attrs["WKAppBundleIdentifier"] = try identifier(parent, from: original, to: rewritten)
+            ext["NSExtensionAttributes"] = attrs
+            values["NSExtension"] = ext
+        }
+        return values
+    }
+
     public static func validate(_ profile: ProvisioningProfile, bundleID: String, teamID: String, udid: String, now: Date = Date()) throws {
         let dictionary = try ProvisioningProfile.dictionary(fromEncodedData: profile.data)
         let platforms = dictionary["Platform"] as? [String] ?? []

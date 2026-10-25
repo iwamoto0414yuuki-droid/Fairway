@@ -73,9 +73,14 @@ final class WatchSupportTests: XCTestCase {
 
     #if os(macOS)
     func testNestedWatchReceivesItsOwnSignedEntitlements() async throws {
+        try await verifySignedPayload(realIPA: false)
+    }
+    func testActualFairwayIPAWithRewrittenCompanionAndAllArchitectures() async throws {
+        try await verifySignedPayload(realIPA: true)
+    }
+    private func verifySignedPayload(realIPA: Bool) async throws {
         let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         defer { try? FileManager.default.removeItem(at: root) }
-        let app = try host(at: root)
         func command(_ executable: String, _ arguments: [String]) throws -> Data {
             let process = Process()
             process.executableURL = URL(fileURLWithPath: executable)
@@ -98,13 +103,40 @@ final class WatchSupportTests: XCTestCase {
             }
             return data
         }
-        let source = root.appendingPathComponent("fixture.c")
-        try Data("int main(void) { return 0; }".utf8).write(to: source)
-        let phoneSDK = String(decoding: try command("/usr/bin/xcrun", ["--sdk", "iphoneos", "--show-sdk-path"]), as: UTF8.self).trimmingCharacters(in: .whitespacesAndNewlines)
-        let watchSDK = String(decoding: try command("/usr/bin/xcrun", ["--sdk", "watchos", "--show-sdk-path"]), as: UTF8.self).trimmingCharacters(in: .whitespacesAndNewlines)
-        _ = try command("/usr/bin/xcrun", ["clang", "-target", "arm64-apple-ios17.0", "-isysroot", phoneSDK, source.path, "-o", app.fileURL.appendingPathComponent("Fixture").path])
-        let watchURL = app.fileURL.appendingPathComponent("Watch/Watch.app")
-        _ = try command("/usr/bin/xcrun", ["clang", "-target", "arm64_32-apple-watchos10.0", "-isysroot", watchSDK, source.path, "-o", watchURL.appendingPathComponent("Fixture").path])
+        let app: AppBundle
+        if realIPA {
+            guard let path = ProcessInfo.processInfo.environment["FAIRWAY_TEST_IPA"] else {
+                throw XCTSkip("Real IPA must be supplied explicitly; CI requires this test input")
+            }
+            try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+            _ = try command("/usr/bin/ditto", ["-x", "-k", path, root.path])
+            app = try XCTUnwrap(AppBundle(fileURL: root.appendingPathComponent("Payload/Fairway.app")))
+            let oldID = app.bundleIdentifier
+            let newID = oldID + "." + team
+            // Use the production relationship helper, then reload AppBundle to avoid cached plist values.
+            for child in app.watchSigningBundles {
+                var info = child.infoPlist
+                info["CFBundleIdentifier"] = try WatchBundleSupport.identifier(child.bundleIdentifier, from: oldID, to: newID)
+                info.merge(try WatchBundleSupport.relationships(in: info, from: oldID, to: newID)) { _, new in new }
+                try PropertyListSerialization.data(fromPropertyList: info, format: .xml, options: 0).write(to: child.fileURL.appendingPathComponent("Info.plist"))
+            }
+            var info = app.infoPlist
+            info["CFBundleIdentifier"] = newID
+            try PropertyListSerialization.data(fromPropertyList: info, format: .xml, options: 0).write(to: app.fileURL.appendingPathComponent("Info.plist"))
+        } else {
+            app = try host(at: root)
+            let source = root.appendingPathComponent("fixture.c")
+            try Data("int main(void) { return 0; }".utf8).write(to: source)
+            let phoneSDK = String(decoding: try command("/usr/bin/xcrun", ["--sdk", "iphoneos", "--show-sdk-path"]), as: UTF8.self).trimmingCharacters(in: .whitespacesAndNewlines)
+            let watchSDK = String(decoding: try command("/usr/bin/xcrun", ["--sdk", "watchos", "--show-sdk-path"]), as: UTF8.self).trimmingCharacters(in: .whitespacesAndNewlines)
+            _ = try command("/usr/bin/xcrun", ["clang", "-target", "arm64-apple-ios17.0", "-isysroot", phoneSDK, source.path, "-o", app.fileURL.appendingPathComponent("Fixture").path])
+            _ = try command("/usr/bin/xcrun", ["clang", "-target", "arm64_32-apple-watchos10.0", "-isysroot", watchSDK, source.path, "-o", app.fileURL.appendingPathComponent("Watch/Watch.app/Fixture").path])
+        }
+        let payload = try XCTUnwrap(AppBundle(fileURL: app.fileURL))
+        let watches = try WatchBundleSupport.applications(in: payload)
+        XCTAssertEqual(watches.count, 1)
+        let watch = try XCTUnwrap(watches.first)
+        let watchURL = watch.fileURL
         let key = root.appendingPathComponent("fixture-key.pem")
         let cert = root.appendingPathComponent("fixture-cert.pem")
         let p12 = root.appendingPathComponent("fixture.p12")
@@ -126,16 +158,21 @@ final class WatchSupportTests: XCTestCase {
         _ = try command("/usr/bin/openssl", ["pkcs12", "-export", "-inkey", key.path, "-in", cert.path, "-out", p12.path, "-passout", "pass:fixture"])
         let identity = try KeyStore(p12Data: Data(contentsOf: p12), password: "fixture")
         let signer = AppBundleSigner(team: Team(identifier: team, name: "Offline", type: .free), keyStore: identity)
-        try await signer.signApp(at: app.fileURL, provisioningProfiles: [profile(platform: "iOS", bundle: "local.test"), profile()])
+        try await signer.signApp(at: payload.fileURL, provisioningProfiles: [profile(platform: "iOS", bundle: payload.bundleIdentifier), profile(bundle: watch.bundleIdentifier)])
         let rawEntitlements = try MachOParser.entitlements(at: watchURL)
         XCTAssertFalse(rawEntitlements.isEmpty, "Watch executable has no entitlements after signing")
         let embedded = try XCTUnwrap(PropertyListSerialization.propertyList(from: Data(rawEntitlements.utf8), options: [], format: nil) as? [String: Any])
-        XCTAssertEqual(embedded["application-identifier"] as? String, team + ".local.test.watch")
+        XCTAssertEqual(embedded["application-identifier"] as? String, team + "." + watch.bundleIdentifier)
         // Verifies nested Mach-O signatures and resource seals; this is not Apple provisioning approval.
-        _ = try command("/usr/bin/codesign", ["--verify", "--deep", "--strict", app.fileURL.path])
+        _ = try command("/usr/bin/codesign", ["--verify", "--deep", "--strict", "--all-architectures", payload.fileURL.path])
+        if realIPA {
+            let archs = String(decoding: try command("/usr/bin/lipo", ["-archs", watchURL.appendingPathComponent(watch.infoPlist["CFBundleExecutable"] as! String).path]), as: UTF8.self)
+            XCTAssertTrue(archs.contains("arm64_32"), "Series 7 slice must remain present")
+            XCTAssertTrue(archs.split(separator: " ").contains { $0.trimmingCharacters(in: .whitespacesAndNewlines) == "arm64" })
+        }
         let watchEntitlements = try command("/usr/bin/codesign", ["--display", "--entitlements", "-", "--xml", watchURL.path])
         let values = try XCTUnwrap(PropertyListSerialization.propertyList(from: watchEntitlements, options: [], format: nil) as? [String: Any])
-        XCTAssertEqual(values["application-identifier"] as? String, team + ".local.test.watch")
+        XCTAssertEqual(values["application-identifier"] as? String, team + "." + watch.bundleIdentifier)
     }
     #endif
 }

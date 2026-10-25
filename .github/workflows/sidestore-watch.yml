@@ -3,6 +3,7 @@ on:
   workflow_dispatch:
 permissions:
   contents: read
+  actions: read
 concurrency:
   group: sidestore-watch-personal
   cancel-in-progress: false
@@ -28,8 +29,19 @@ jobs:
           restore-keys: sidesign-watch-macos26-
       - name: Install packaging tool
         run: brew install ldid
+      - uses: actions/download-artifact@v4
+        with:
+          name: Fairway-0.3.0-minimal
+          run-id: 40140421334
+          github-token: ${{ github.token }}
+          path: build/fairway-signing-input
+      - name: Verify exact real-IPA test input
+        run: |
+          echo "1b3e3c21f3f21ce2e7fb716c14bcc35f52a4200cbf0e7e6e88c97e31e15d572e  build/fairway-signing-input/Fairway-0.3.0-unsigned.ipa" | shasum -a 256 -c -
       - name: Watch bundle and profile regression tests
         working-directory: build/SideStore/Dependencies/SideSign
+        env:
+          FAIRWAY_TEST_IPA: ${{ github.workspace }}/build/fairway-signing-input/Fairway-0.3.0-unsigned.ipa
         run: |
           set -o pipefail
           swift test --filter WatchSupportTests 2>&1 | tee ../../../watch-tests.log
