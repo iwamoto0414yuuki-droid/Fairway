@@ -17,7 +17,7 @@ enum WatchSupportSettings {
         for app in host.watchSigningBundles {
             let id = try WatchBundleSupport.identifier(app.bundleIdentifier, from: host.bundleIdentifier, to: hostProfile.bundleIdentifier)
             let profile = try await ALTAppleAPI.shared.watchProfile(bundleID: id, name: "Fairway Watch", team: team, session: session)
-            try WatchBundleSupport.validate(profile, bundleID: id, teamID: team.identifier, udid: udid)
+            try WatchBundleSupport.validate(profile, bundleID: id, teamID: team.identifier, udid: udid, allowIOSFamily: true)
             guard profile.certificates.contains(where: { $0.serialNumberHex == certificate.certificate.serialNumberHex }) else {
                 throw WatchSupportError.invalid("Watch用プロファイルに現在の署名証明書が含まれていません。証明書は変更せず停止しました。")
             }

@@ -5,11 +5,11 @@ import CodeSignKit
 final class WatchSupportTests: XCTestCase {
     private let team = "TESTTEAM00"
     private let udid = "00000000-0000000000000001"
-    private func profile(platform: String = "watchOS", bundle: String = "local.test.watch", target: String? = nil, expires: Date = Date().addingTimeInterval(3600)) throws -> ProvisioningProfile {
+    private func profile(platform: String = "watchOS", bundle: String = "local.test.watch", target: String? = nil, expires: Date = Date().addingTimeInterval(3600), platforms: [String]? = nil) throws -> ProvisioningProfile {
         let data: [String: Any] = ["Name": "Synthetic test", "UUID": UUID().uuidString,
             "TeamIdentifier": [team], "TeamName": "Synthetic", "CreationDate": Date(), "ExpirationDate": expires,
             "Entitlements": ["application-identifier": team + "." + bundle],
-            "ProvisionedDevices": [target ?? udid], "Platform": [platform], "LocalProvision": true]
+            "ProvisionedDevices": [target ?? udid], "Platform": platforms ?? [platform], "LocalProvision": true]
         let xml = try PropertyListSerialization.data(fromPropertyList: data, format: .xml, options: 0)
         // Parsing fixture only. This is deliberately not a cryptographically valid profile.
         return try ProvisioningProfile(data: Data("fixture-prefix".utf8) + xml)
@@ -50,6 +50,35 @@ final class WatchSupportTests: XCTestCase {
         }
     }
     func testWatchOSPlatformCaseIsIgnored() throws { try WatchBundleSupport.validate(profile(platform: "WATCHOS"), bundleID: "local.test.watch", teamID: team, udid: udid) }
+    func testWatchScopedIOSFamilyProfileAccepted() throws {
+        for platforms in [["iOS"], ["iOS", "visionOS"], ["iOS", "xrOS", "visionOS"]] {
+            try WatchBundleSupport.validate(profile(platforms: platforms), bundleID: "local.test.watch", teamID: team, udid: udid, allowIOSFamily: true)
+        }
+    }
+    func testIOSFamilyProfileRequiresWatchScope() throws {
+        XCTAssertThrowsError(try WatchBundleSupport.validate(profile(platforms: ["iOS", "visionOS"]), bundleID: "local.test.watch", teamID: team, udid: udid)) {
+            XCTAssertTrue($0.localizedDescription.contains("WPF_PLATFORM"))
+        }
+    }
+    func testIOSFamilyWrongWatchRejected() throws {
+        XCTAssertThrowsError(try WatchBundleSupport.validate(profile(target: "00000000-0000000000000002", platforms: ["iOS", "visionOS"]), bundleID: "local.test.watch", teamID: team, udid: udid, allowIOSFamily: true)) {
+            XCTAssertTrue($0.localizedDescription.contains("WPF_DEVICE"))
+        }
+    }
+    func testIOSFamilyCannotBypassIdentityTeamOrExpiry() throws {
+        let value = try profile(expires: Date().addingTimeInterval(-60), platforms: ["iOS", "visionOS"])
+        XCTAssertThrowsError(try WatchBundleSupport.validate(value, bundleID: "wrong.id", teamID: "WRONGTEAM", udid: udid, allowIOSFamily: true)) {
+            for code in ["WPF_APP_ID", "WPF_TEAM", "WPF_EXPIRED"] { XCTAssertTrue($0.localizedDescription.contains(code)) }
+            XCTAssertFalse($0.localizedDescription.contains("WPF_PLATFORM"))
+        }
+    }
+    func testUnsupportedPlatformsStillRejectedInWatchScope() throws {
+        for platforms in [[], ["tvOS"], ["visionOS"], ["macOS"], ["iOS", "tvOS"]] as [[String]] {
+            XCTAssertThrowsError(try WatchBundleSupport.validate(profile(platforms: platforms), bundleID: "local.test.watch", teamID: team, udid: udid, allowIOSFamily: true)) {
+                XCTAssertTrue($0.localizedDescription.contains("WPF_PLATFORM"))
+            }
+        }
+    }
     func testWatchGraph() throws {
         let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         defer { try? FileManager.default.removeItem(at: root) }

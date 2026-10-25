@@ -56,11 +56,18 @@ public enum WatchBundleSupport {
         return values
     }
 
-    public static func validate(_ profile: ProvisioningProfile, bundleID: String, teamID: String, udid: String, now: Date = Date()) throws {
+    public static func validate(_ profile: ProvisioningProfile, bundleID: String, teamID: String, udid: String, now: Date = Date(), allowIOSFamily: Bool = false) throws {
         let dictionary = try ProvisioningProfile.dictionary(fromEncodedData: profile.data)
         let platforms = dictionary["Platform"] as? [String] ?? []
         var failures: [String] = []
-        if !platforms.contains(where: { $0.caseInsensitiveCompare("watchOS") == .orderedSame }) {
+        // iOS development profiles also cover watchOS. The companion workflow
+        // enables this only after watch-scoped registration/profile retrieval.
+        // Watch UDID, exact child ID, team, expiry and signing cert still gate use.
+        let normalized = Set(platforms.map { $0.lowercased() })
+        let watchPlatform = normalized.contains("watchos")
+        let scopedIOSFamily = allowIOSFamily && normalized.contains("ios")
+            && normalized.isSubset(of: Set(["ios", "xros", "visionos"]))
+        if !watchPlatform && !scopedIOSFamily {
             // OS names are public metadata; never expose arbitrary profile values.
             let known = platforms.compactMap { value -> String? in
                 ["iOS", "watchOS", "tvOS", "macOS", "visionOS"].first { $0.caseInsensitiveCompare(value) == .orderedSame }
