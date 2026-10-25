@@ -7,7 +7,7 @@ import zipfile
 import build_distribution as guide
 
 ROOT = Path(__file__).resolve().parents[1]
-OUT = ROOT/'release/Watch対応SideStore_Fairway最小版_試験セット'
+OUT = ROOT/'release/Watch対応SideStore_Fairway最小版_追加検証セット'
 PAGES = [
     ('このセットで試すこと', [
         ('lead', 'Windows・無料Apple Account・既存のSideStore認証を使う試験版'),
@@ -56,7 +56,7 @@ PAGES = [
         ('p', '大きい左の数字が総打数、右がパット数です。それぞれの上下の−／＋で操作します。パットの＋は総打数にも1打を加えます。パットで打ったときは、左右両方の＋を押す必要はありません。'),
         ('p', 'クラブは「クラブ（任意）」から、記録したい打だけ選びます。選択は自動保存です。ホールを横スワイプし、最後のページで前半・後半・合計の打数とパット数を確認できます。iPhoneでは一覧のスコアカードを見られます。'),
         ('h', '今回外した機能と省電力'),
-        ('p', 'GPS距離・地図・打点位置・運動計測・常時測位は含めていません。常時通信やポーリングもしません。過去データとの互換性のため、旧版で保存した項目はデータから消さず、今回の画面では使いません。'),
+        ('p', 'GPS・地図・運動計測・常時通信は含めていません。カウンターへ戻りやすくするには、Watchの設定→一般→時計に戻る→Fairway→カスタム→1時間後を選びます。画面を1時間点灯し続ける設定ではありません。'),
         ('h', '無料アカウントの期限更新'),
         ('p', '期限が切れる前に、この改修版SideStoreからFairwayをRefreshします。Watchを含むアプリは、iPhone向けprofileの注入だけで終わらず、Watchの個別署名を含む再導入処理を実行する設計です。初回成功後も、更新後にWatchで起動できるかを実機で確認してください。'),
         ('p', '以後のFairwayの改修は、小さいFairwayのIPAだけを更新します。SideStore側の修正が必要な場合に限り、SideStoreの試験版も更新します。通常版SideStoreへ戻した場合のWatch更新は保証できません。SideStore自体の通常版・Nightlyへの更新は、Watch対応が外れる可能性があるため更新前に確認してください。'),
@@ -73,6 +73,7 @@ def build():
         'SideStore-Watch-personal.ipa': ROOT/'release/watch-personal/SideStore-Watch-personal.ipa',
         'SideStore-Watch-personal-source.zip': ROOT/'release/watch-personal/SideStore-Watch-personal-source.zip',
         'SideStore-Watch-build.json': ROOT/'release/watch-personal/SideStore-Watch-build.json',
+        'Watch-signing-tests.log': ROOT/'release/watch-personal/watch-tests.log',
         'Fairway-0.3.0-unsigned.ipa': ROOT/'release/Fairway-0.3.0-unsigned.ipa',
         'Fairway-0.3.0-source.zip': ROOT/'release/Fairway-0.3.0-source.zip',
         'Fairway-verification.json': ROOT/'release/verification-0.3.0.json',
@@ -88,6 +89,8 @@ def build():
     for path in (ROOT/'release/watch-info-source').iterdir():
         if path.is_file(): shutil.copyfile(path, OUT/path.name)
     shutil.copyfile(ROOT/'tools/watch-support/SOURCE.md', OUT/'SOURCE-and-notices.md')
+    shutil.copyfile(ROOT/'docs/WATCH_RECHECK.md', OUT/'02_再点検と方法の比較.md')
+    shutil.copyfile(ROOT/'docs/WATCH_PERSONAL_RESULTS.md', OUT/'03_ビルド検証結果.md')
     helper = OUT/'Fairway-WatchInfo.exe'
     (OUT/'WatchInfo-verification.json').write_text(json.dumps({
         'source_commit':'5e41ddb',
@@ -109,7 +112,8 @@ def build():
             markdown.append(f'[{body[0]}]({body[1]})\n' if kind == 'link' else body+'\n')
     (OUT/'01_Watch導入手順.md').write_text('\n'.join(markdown), encoding='utf-8')
     (OUT/'00_最初に読む.txt').write_text(
-        'Watch対応SideStore＋Fairway最小版の個人用試験セット\n'
+        'Watch対応SideStore＋Fairway最小版の追加検証セット\n'
+        '実際のFairway IPAによる署名テストを追加しました。方法の比較は02_再点検と方法の比較.mdにあります。\n'
         '最初に01_Watch導入手順.pdfの2ページ目を読んでください。\n'
         '現在動いているSideStoreからSideStore-Watch-personal.ipaを更新として導入します。\n'
         'SideStoreとFairwayを削除したり、ログアウトしたりしないでください。\n'
