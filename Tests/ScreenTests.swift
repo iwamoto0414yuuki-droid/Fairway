@@ -22,7 +22,7 @@ final class ScreenTests: XCTestCase {
         snapshot(NavigationStack { SavedRoundView(id: id) }.environmentObject(store), name: "native-saved")
     }
     private func snapshot<V: View>(_ view: V, name: String) {
-        let controller = UIHostingController(rootView: view.tint(fairwayGreen).preferredColorScheme(.dark))
+        let controller = UIHostingController(rootView: view.tint(fairwayGreen).preferredColorScheme(.dark).environment(\.locale, Locale(identifier: "ja_JP")))
         guard let scene = UIApplication.shared.connectedScenes.compactMap({ $0 as? UIWindowScene }).first else {
             XCTFail("A connected UIWindowScene is required for a native screenshot"); return
         }

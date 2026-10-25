@@ -21,7 +21,7 @@ app = 'build/simulator/Build/Products/Debug-watchsimulator/FairwayWatch.app'
 run('xcrun', 'simctl', 'install', watch['udid'], app)
 for mode, filename in [('score', 'native-watch.png'), ('summary', 'native-watch-summary.png'), ('clubs', 'native-watch-clubs.png'), ('club-grid', 'native-watch-club-grid.png'), ('home', 'native-watch-home.png'), ('saved', 'native-watch-saved.png')]:
     subprocess.run(['xcrun', 'simctl', 'terminate', watch['udid'], 'local.fairway.score.watchkitapp'], capture_output=True)
-    run('xcrun', 'simctl', 'launch', watch['udid'], 'local.fairway.score.watchkitapp', '--preview-' + mode)
+    run('xcrun', 'simctl', 'launch', watch['udid'], 'local.fairway.score.watchkitapp', '--preview-' + mode, '-AppleLanguages', '(ja)', '-AppleLocale', 'ja_JP')
     time.sleep(6)
     run('xcrun', 'simctl', 'io', watch['udid'], 'screenshot', 'build/' + filename)
 Path('build/watch-preview-device.json').write_text(json.dumps(watch, indent=2))

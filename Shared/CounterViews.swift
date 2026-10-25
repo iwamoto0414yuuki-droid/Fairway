@@ -165,7 +165,7 @@ struct ScoreEntry: View {
     }
     var body: some View {
         ScrollView {
-            VStack(spacing: 6) {
+            VStack(spacing: 4) {
                 counterRow("打数", value: draft.strokes,
                     minusLabel: "打数を1減らす", plusLabel: "打数を1増やす",
                     minusDisabled: draft.strokes == 0, plusDisabled: draft.strokes >= 30,
@@ -215,12 +215,19 @@ struct ScoreEntry: View {
         HStack(spacing: 5) {
             VStack(alignment: .leading, spacing: 0) {
                 Text(title).font(.system(size: 11)).lineLimit(1).minimumScaleFactor(0.8)
-                Text("\(value)").font(.system(size: 34, weight: .semibold, design: .rounded))
+                Text("\(value)").font(.system(size: counterNumberSize, weight: .semibold, design: .rounded))
                     .monospacedDigit().lineLimit(1).minimumScaleFactor(0.75)
             }.frame(maxWidth: .infinity, alignment: .leading).accessibilityElement(children: .combine)
             counterButton("−", label: minusLabel, disabled: minusDisabled, action: minus)
             counterButton("＋", label: plusLabel, disabled: plusDisabled, action: plus)
-        }.frame(minHeight: 50)
+        }.frame(minHeight: 44)
+    }
+    private var counterNumberSize: CGFloat {
+        #if os(watchOS)
+        return 28
+        #else
+        return 48
+        #endif
     }
     private func counterButton(_ text: String, label: String, disabled: Bool, action: @escaping () -> Void) -> some View {
         Button(action: action) { Text(text).font(.title3).bold().frame(width: 44, height: 44) }
