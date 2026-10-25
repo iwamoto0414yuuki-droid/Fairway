@@ -22,6 +22,7 @@ def verify(archive_path, run_url, commit, expected_archive_sha256):
     for name,key in [('Fairway-Watch-Loader.exe','exe_sha256'),('Fairway-Watch-Loader-source.zip','source_sha256')]:
         assert hashlib.sha256((out/name).read_bytes()).hexdigest()==report[key]
     assert report['auth_backport_tests_passed']==21
+    assert report['certificate_reuse_tests_passed']==5
     assert report['physical_login_verified'] is False and report['physical_watch_install_verified'] is False
     assert report['automatic_certificate_revocation'] is False
     assert 'Packaged GUI window initialized' in (out/'gui-smoke.txt').read_text(encoding='utf-8-sig')
@@ -37,8 +38,12 @@ def verify(archive_path, run_url, commit, expected_archive_sha256):
         account=source.read('iloader/src-tauri/src/account.rs').decode('utf-8')
         assert 'MaxCertsBehavior::Error' in account and 'MaxCertsBehavior::Prompt' not in account
         assert report['keyring_service'] in account
+        assert 'pub async fn reuse_original_certificate' in account
+        assert 'KeyringStorage::new("iloader".into())' in account
         interface=source.read('iloader/src/App.tsx').decode('utf-8')
         assert 'Fairway Watch Loader' in interface
+        assert '通常版iloaderの署名鍵を再利用' in interface
+        assert config['version']=='2.3.1-auth.20261025.2'
         assert 'installSideStoreOperation' not in interface and 'installLiveContainerOperation' not in interface
         assert interface.count('t("app.import_ipa")')==1
     report.update(run_url=run_url,source_commit=commit,artifact_sha256=expected_archive_sha256,

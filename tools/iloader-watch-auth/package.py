@@ -21,6 +21,8 @@ summary=re.search(r'test result: ok\. (\d+) passed; 0 failed;', log)
 assert summary
 auth = [line for line in log.splitlines() if line.startswith('test ') and 'auth_backport_' in line and line.rstrip().endswith(' ... ok')]
 assert len(auth) == 21, len(auth)
+reuse = [line for line in log.splitlines() if line.startswith('test ') and 'certificate_reuse_' in line and line.rstrip().endswith(' ... ok')]
+assert len(reuse) == 5, len(reuse)
 shutil.copyfile(root/'auth-tests.log',out/'offline-tests.log')
 shutil.copyfile(root/'watch-auth-patch.json',out/'patch-manifest.json')
 notice = []
@@ -84,6 +86,7 @@ for manifest in (app/'node_modules').rglob('package.json'):
     'Personal changes: https://github.com/iwamoto0414yuuki-droid/Fairway/tree/main/tools/iloader-watch-auth\n'
     'Independent experiment; no upstream endorsement. Exact modified source and original notices accompany this EXE.\n',encoding='utf-8-sig')
 report={'ipa_not_required_for_auth_check':True,'auth_backport_tests_passed':len(auth),'total_library_tests_passed':int(summary.group(1)),
+        'certificate_reuse_tests_passed':len(reuse),'explicit_local_key_reuse':True,
         'exe_sha256':hashlib.sha256((out/'Fairway-Watch-Loader.exe').read_bytes()).hexdigest(),
         'source_sha256':hashlib.sha256(source.read_bytes()).hexdigest(),
         'app_identifier':'local.fairway.watchloader.auth20261025','keyring_service':'fairway-watch-loader-auth-20261025',

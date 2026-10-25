@@ -4,6 +4,7 @@ import hashlib
 import json
 import shutil
 import sys
+from certificate_reuse import apply_certificate_reuse
 
 HERE = Path(__file__).resolve().parent
 APP_REF = '09332620405e321936b25f0f381256bde08e4f86'
@@ -21,7 +22,7 @@ def replace(root, name, before, after, count=1):
 def apply(app, lib):
     # Preserve exact Watch implementation files; auth changes must not replace them.
     watch = {p.relative_to(lib).as_posix(): hashlib.sha256(p.read_bytes()).hexdigest()
-             for p in (lib/'isideload/src/sideload').glob('*.rs')}
+             for p in (lib/'isideload/src/sideload').glob('*.rs') if p.name != 'cert_identity.rs'}
     path = 'isideload/src/anisette/mod.rs'
     replace(lib, path, '#[cfg_attr(feature = "wasm", async_trait::async_trait(?Send))]',
             '#[derive(Debug, Clone)]\npub enum AnisetteDataResponse {\n    Data(AnisetteData),\n    NeedsProvisioning,\n    IncorrectlyProvisioned,\n}\n\n#[cfg_attr(feature = "wasm", async_trait::async_trait(?Send))]')
@@ -128,7 +129,7 @@ def apply(app, lib):
     replace(app, 'src-tauri/src/lib.rs', 'LevelFilter::DEBUG', 'LevelFilter::WARN', count=2)
     (app/'src/update.ts').write_text('export async function checkForUpdates() { /* Personal build: updates are provided manually. */ }\n',encoding='utf-8')
     config=app/'src-tauri/tauri.conf.json';c=json.loads(config.read_text())
-    c.update(productName='Fairway Watch Loader', identifier='local.fairway.watchloader.auth20261025', version='2.3.1-auth.20261025.1')
+    c.update(productName='Fairway Watch Loader', identifier='local.fairway.watchloader.auth20261025', version='2.3.1-auth.20261025.2')
     c['app']['windows'][0]['title']='Fairway Watch Loader — 認証更新試験版'
     c['plugins']={};c['bundle']['active']=False;c['bundle']['createUpdaterArtifacts']=False
     config.write_text(json.dumps(c,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
@@ -159,12 +160,14 @@ def apply(app, lib):
     p.write_text(s,encoding='utf-8',newline='\n')
     replace(app, 'src/AppleID.tsx', '<button type="submit">{t("apple_id.login")}</button>',
             '<p className="settings-hint">個人用Watch試験版です。最初は「認証を確認」だけを実行してください。この操作では証明書の作成・取消やアプリ導入は行いません。</p>\n              <button type="submit">認証を確認（Login）</button>')
+    apply_certificate_reuse(app, lib)
     after={p.relative_to(lib).as_posix():hashlib.sha256(p.read_bytes()).hexdigest()
-           for p in (lib/'isideload/src/sideload').glob('*.rs')}
+           for p in (lib/'isideload/src/sideload').glob('*.rs') if p.name != 'cert_identity.rs'}
     assert watch==after, 'Watch signing/install implementation unexpectedly changed'
     (app.parent/'watch-auth-patch.json').write_text(json.dumps({
         'iloader_base':APP_REF,'isideload_base':LIB_REF,'keyring_service':SERVICE,
         'watch_signing_install_files_unchanged':watch,'automatic_certificate_revocation':False,
+        'certificate_identity_changed_for_explicit_local_key_reuse':True,
         'physical_login_verified':False,'physical_watch_install_verified':False},indent=2)+'\n')
 
 
