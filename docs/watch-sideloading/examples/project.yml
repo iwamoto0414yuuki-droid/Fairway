@@ -1,0 +1,54 @@
+# Minimal template: supply iPhone/ and Watch/ Swift @main sources and assets.
+# Replace every ExampleApp/ExampleWatch name and local.example.counter ID together.
+name: ExampleApp
+options:
+  deploymentTarget:
+    iOS: '17.0'
+    watchOS: '10.0'
+settings:
+  base:
+    SWIFT_VERSION: '5.0'
+    MARKETING_VERSION: '0.1.0'
+    CURRENT_PROJECT_VERSION: '1'
+targets:
+  ExampleApp:
+    type: application
+    platform: iOS
+    sources: [iPhone]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: local.example.counter
+        TARGETED_DEVICE_FAMILY: '1'
+    info:
+      path: build/iPhone-Info.plist
+      properties:
+        CFBundleDisplayName: ExampleApp
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        UILaunchScreen: {}
+    dependencies:
+      - target: ExampleWatch
+        embed: true
+  ExampleWatch:
+    type: application
+    platform: watchOS
+    sources: [Watch]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: local.example.counter.watchkitapp
+        TARGETED_DEVICE_FAMILY: '4'
+        SKIP_INSTALL: YES
+    info:
+      path: build/Watch-Info.plist
+      properties:
+        CFBundleDisplayName: ExampleWatch
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        WKApplication: true
+        WKCompanionAppBundleIdentifier: local.example.counter
+        WKRunsIndependentlyOfCompanionApp: true
+schemes:
+  ExampleApp:
+    build:
+      targets:
+        ExampleApp: all

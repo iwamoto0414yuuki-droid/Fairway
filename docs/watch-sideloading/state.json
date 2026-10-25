@@ -1,0 +1,109 @@
+{
+  "schema_version": 1,
+  "updated": "2026-10-25",
+  "path_base": "repository-root",
+  "entry_point": "docs/watch-sideloading/README.md",
+  "current_strategy": {
+    "normal_operation": "modified-sidestore-on-iphone",
+    "recovery": "windows-watch-loader",
+    "preferred_pairing_protocol": "rppairing"
+  },
+  "environment": {
+    "host": "Windows",
+    "apple_account": "free",
+    "iphone": "iPhone 16e",
+    "watch": "Apple Watch Series 7",
+    "ios_user_reported": "26.6.2",
+    "watchos_user_reported": "26.6",
+    "user_has_mac": false,
+    "build_environment": "GitHub Actions macOS"
+  },
+  "user_reported_evidence": {
+    "source": "conversation with device owner",
+    "date": "2026-10-25",
+    "loader_install_and_watch_launch": true,
+    "modified_sidestore_install": true,
+    "manual_refresh_and_subsequent_watch_launch": true,
+    "automatic_refresh_configured": true,
+    "automatic_refresh_execution_verified": false,
+    "watch_launch_after_old_profile_expiry_verified": false,
+    "comprehensive_score_sync_and_battery_verified": false
+  },
+  "limitations": [
+    "Physical success applies to Fairway on this user environment, not every Watch app.",
+    "Automatic settings are reported configured; exact full configuration and successful execution are not recorded.",
+    "Original CI verification JSON predates later user reports; keep provenance immutable and read this state for later physical results.",
+    "release/ and build/ are gitignored; CI artifacts have finite retention."
+  ],
+  "artifacts": {
+    "sidestore": {
+      "file": "release/SideStore_Watch_iOS系プロファイル対応版/SideStore-Watch-ios-family-fix.ipa",
+      "sha256": "de762ba007e868ac3fab7bfbc2142882d16947be218c2408f03f7b57a18e09f2",
+      "source_zip": "release/SideStore_Watch_iOS系プロファイル対応版/SideStore-Watch-personal-source.zip",
+      "source_sha256": "fbf492ab3e7057c6f874ebc31b2f71dc71dbcea718191b3a72c29624a6c782c5",
+      "source_commit": "c61107c80a8121f27f4f39e0dd8cc6e3b91e7cf9",
+      "ci_run": "https://github.com/iwamoto0414yuuki-droid/Fairway/actions/runs/40182952453",
+      "offline_tests": 26
+    },
+    "app": {
+      "file": "release/Fairway-0.3.0-unsigned.ipa",
+      "sha256": "1b3e3c21f3f21ce2e7fb716c14bcc35f52a4200cbf0e7e6e88c97e31e15d572e",
+      "source_commit": "ad565069f56d6b8e645a6581eb829b0363aa1cbf",
+      "ci_run": "https://github.com/iwamoto0414yuuki-droid/Fairway/actions/runs/40140421334",
+      "native_tests": 38
+    },
+    "loader": {
+      "file": "release/watch-auth-loader/Fairway-Watch-Loader.exe",
+      "version": "2.3.1-auth.20261025.2",
+      "sha256": "a86b3648679ae0283b12b5f9677e8fae473b77bff9f6aaa13a37cc176f1c1f4b",
+      "source_zip": "release/watch-auth-loader/Fairway-Watch-Loader-source.zip",
+      "source_sha256": "f57e90cad8658f78a26da3990e6e43018d4544a565d0f55b0cdfdd6a1081182f",
+      "source_commit": "ec1ca778c1ef345833400fb0ebec9bc05d9ffbfe",
+      "ci_run": "https://github.com/iwamoto0414yuuki-droid/Fairway/actions/runs/40174027549",
+      "offline_tests": 29
+    }
+  },
+  "upstream_pins": {
+    "SideStore": "d97ec133719d79916675bdaf722b82a8d091d545",
+    "SideSign": "752d1ef602aa792a432ffa1e71646dc1ecf7363c",
+    "Rzbck/iloader": "09332620405e321936b25f0f381256bde08e4f86",
+    "Rzbck/isideload": "06248a85a1b34ab6278b8849474bef6cc798dcf6",
+    "auth_reference_nab138/isideload": "065e852b2092f1386c88195ea3a6506f6b917742"
+  },
+  "source_map": {
+    "sidestore_patch": "tools/watch-support/apply.py",
+    "watch_profiles": "tools/watch-support/SideSign/WatchBundleSupport.swift",
+    "watch_settings": "tools/watch-support/SideStore/WatchSupportSettings.swift",
+    "watch_tests": "tools/watch-support/SideSign/WatchSupportTests.swift",
+    "sidestore_ci": ".github/workflows/sidestore-watch.yml",
+    "loader_patch": "tools/iloader-watch-auth/apply.py",
+    "loader_key_reuse": "tools/iloader-watch-auth/certificate_reuse.py",
+    "loader_ci": ".github/workflows/iloader-watch-auth.yml",
+    "app_project": "project.yml",
+    "app_ci": ".github/workflows/ios.yml",
+    "app_build": "scripts/build_ipa.sh",
+    "app_packager": "scripts/package_ipa.py"
+  },
+  "do_not_regress": [
+    "Do not require literal watchOS in every Watch profile Platform array.",
+    "Allow iOS family only in watch-scoped retrieval; preserve Watch UDID, exact bundle ID, team, expiry and current certificate checks.",
+    "Do not substitute main iPhone profile for Watch children.",
+    "Refresh of an embedded Watch app must re-sign/reinstall the companion.",
+    "Pass pairing protocol into the first parse as well as save.",
+    "Do not revoke certificates automatically or expose real keys/pairing/UDIDs."
+  ],
+  "next_physical_checks": [
+    "Confirm actual automatic refresh execution and error history.",
+    "Confirm Watch still launches after original signature/profile expiry.",
+    "Confirm score persistence/sync across updates and battery behavior.",
+    "Validate each new app and capability on actual devices."
+  ],
+  "examples_validation": {
+    "inspector_unit_tests_passed": 6,
+    "existing_fairway_ipa_structure_checked": true,
+    "existing_fairway_watch_arm64_32_checked": true,
+    "native_build_of_template_executed": false,
+    "shell_syntax_checked": true,
+    "yaml_parser_checked": false
+  }
+}

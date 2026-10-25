@@ -1,5 +1,11 @@
 # Fairway Watch Loader auth experiment
 
+Subsequent user report (2026-10-25): the `.2` build reused the original stock
+iloader key and successfully installed Fairway, which launched on the Watch.
+The user later confirmed manual refresh and Watch launch through the modified
+SideStore. See the maintained [reuse guide](../../docs/watch-sideloading/README.md).
+Earlier CI verification statements below retain their original scope.
+
 Independent personal derivative; not an official iloader release or an upstream contribution.
 Original iloader: https://github.com/nab138/iloader and https://iloader.app/ .
 No affiliation or endorsement is implied. Original license and copyright notices are retained.

@@ -16,13 +16,14 @@ Watchへの導入を優先し、GPS・地図を外しました。打数、パッ
 
 ## 導入状況と個人用SideStore試験版
 
-以前のIPAはiPhoneで起動したとの報告がありますが、Watchへの導入は整合性エラーで失敗しています。通常のSideStore向けID修正だけでは解決していません。認証更新版のWatch Loaderは、利用者の報告で認証後の証明書取得まで進み、証明書上限7460で停止しました。元の署名鍵を明示操作で照合・再利用する版を追加しました。鍵の再利用とWatch導入・期限更新の実機確認はこれからです。
+2026-10-25、利用者がWindowsのWatch Loaderからの導入・Watch起動に成功。その後、iOS系プロファイル対応版の改修SideStoreからもFairwayを導入し、**iPhoneだけでの手動Refreshと、その後のWatch起動に成功**したと報告しています。
 
 現在動いているSideStore 0.7系のログイン・証明書を利用するため、個人用のWatch対応改修を開発しています。元の認証処理とアプリ識別子を維持し、Watchの端末登録、専用profileの取得・検査、親子IDの書き換え、個別署名、Watchを含むアプリのRefresh時の再署名を追加します。
 
-この改修は公式SideStoreではありません。**実機での認証引継ぎ・無料アカウントでのWatch導入・次回Refresh後のWatch起動は未確認です。** ビルドやオフライン検査の成功を実機成功と混同しません。
+この改修は公式SideStoreではありません。自動更新は利用者が設定済みですが、**実際の自動実行と旧署名の期限後の起動は未確認**です。他アプリ・他環境の成功も個別に検証します。
 
 - [導入手順](INSTALL.md)
+- **[今後のAI・他アプリ向け：再利用用手順・コード・試行錯誤の記録](docs/watch-sideloading/README.md)**
 - [個人用SideStoreのソース・ライセンス・ビルド手順](tools/watch-support/SOURCE.md)
 - [調査と改修箇所](docs/SIDESTORE_WATCH_FEASIBILITY.md)
 - [追加検証と導入方法の比較](docs/WATCH_RECHECK.md)

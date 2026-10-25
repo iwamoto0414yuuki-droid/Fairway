@@ -1,5 +1,11 @@
 # Personal SideStore Watch experiment
 
+2026-10-25 subsequent user report: installation through the iOS-family-profile fix,
+manual Refresh on iPhone, and subsequent Watch launch succeeded. Automatic refresh
+was reported configured, but actual automatic execution and launch beyond the old
+profile's expiry remain unverified. See the maintained [reuse guide](../../docs/watch-sideloading/README.md).
+Older build/CI records below and in artifacts retain their original verification scope.
+
 This is independent personal development for Fairway, not an official SideStore release or an upstream contribution. No maintainer review, issue, comment, PR, or endorsement is requested or implied.
 
 Upstream SideStore: https://github.com/SideStore/SideStore at `d97ec133719d79916675bdaf722b82a8d091d545`, under its AGPL-3.0 license. SideSign dependency: https://github.com/SideStore/SideSign at `752d1ef602aa792a432ffa1e71646dc1ecf7363c`, under its included license. All original copyright/license notices are retained. Generated IPA packages must include the corresponding modified source and original license texts.
