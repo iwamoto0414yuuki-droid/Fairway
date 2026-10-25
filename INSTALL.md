@@ -1,5 +1,7 @@
 # Watch対応SideStoreとFairway最小版の導入
 
+2026-10-25追記：SideStoreの改修と別の選択肢として、Windows用の「Fairway Watch Loader」認証更新試験版も作成しました。[検証結果](docs/WATCH_AUTH_LOADER_RESULTS.md)を参照してください。この別経路では、iPhoneのSideStoreを更新せず、Windows側で新しくログインします。配布ZIPの「01_導入手順_認証更新版.pdf」の2ページ目から認証だけを確認します。以下は改修版SideStoreを使う場合の手順です。
+
 この手順は、現在のSideStore 0.7系でFairwayのRefreshが成功している利用者向けの個人用試験経路です。Windowsと無料Apple Accountが前提です。実機でのログイン引継ぎ・Watch導入は未確認です。現在のSideStoreとFairwayは削除しないでください。
 
 1. 完成した試験セットをすべて展開し、同梱の「01_Watch導入手順.pdf」を読みます。
