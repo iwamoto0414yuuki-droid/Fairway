@@ -46,7 +46,7 @@ private struct WatchPreview: View {
                     if let back = round.backSummary { SummaryRow(title: "後半（10〜18H）", summary: back) }
                     SummaryRow(title: "全体", summary: round.summary)
                 }.navigationTitle("スコア集計")
-            } else { ScoreEntry(id: round.id, holeIndex: 0, initial: round.holes[0]).navigationTitle("1ホール") }
+            } else { ScoreEntry(id: round.id, holeIndex: 0, initial: round.holes[0], showsHoleHint: true).navigationTitle("1ホール") }
         }
             .environmentObject(store).tint(fairwayGreen).preferredColorScheme(.dark)
     }

@@ -51,7 +51,7 @@ struct RoundView: View {
             #if os(watchOS)
             TabView(selection: $selected) {
                 ForEach(Array(round.holes.enumerated()), id: \.element.id) { index, hole in
-                    ScoreEntry(id: id, holeIndex: index, initial: hole).tag(index)
+                    ScoreEntry(id: id, holeIndex: index, initial: hole, showsHoleHint: true).tag(index)
                 }
                 ScrollView { ScoreCard(id: id) }.tag(round.holes.count)
             }
@@ -62,7 +62,7 @@ struct RoundView: View {
                 Section { ScoreCard(id: id) }
                 Section("ホールごとの記録") {
                     ForEach(Array(round.holes.enumerated()), id: \.element.id) { index, hole in
-                        NavigationLink { ScoreEntry(id: id, holeIndex: index, initial: hole) } label: {
+                        NavigationLink { ScoreEntry(id: id, holeIndex: index, initial: hole).navigationTitle("\(index + 1)ホール") } label: {
                             HStack {
                                 Text("\(hole.id)H")
                                 Spacer()
@@ -97,7 +97,7 @@ struct SavedRoundView: View {
                 }
                 Section("ホールを選んで修正") {
                     ForEach(Array(round.holes.enumerated()), id: \.element.id) { index, hole in
-                        NavigationLink { ScoreEntry(id: id, holeIndex: index, initial: hole) } label: {
+                        NavigationLink { ScoreEntry(id: id, holeIndex: index, initial: hole).navigationTitle("\(index + 1)ホール") } label: {
                             VStack(alignment: .leading, spacing: 3) {
                                 Text("\(index + 1)ホール")
                                 Text(hole.score.value.map { "\($0.strokes)打・\($0.putts ?? 0)パット" } ?? "未入力")
@@ -153,12 +153,13 @@ struct ScoreEntry: View {
     @Environment(\.scenePhase) private var scenePhase
     let id: UUID
     let holeIndex: Int
+    let showsHoleHint: Bool
     @State private var draft: CounterDraft
     @State private var expected: Revision
     @State private var pendingSync = false
     @State private var confirmReset = false
-    init(id: UUID, holeIndex: Int, initial: Hole) {
-        self.id = id; self.holeIndex = holeIndex
+    init(id: UUID, holeIndex: Int, initial: Hole, showsHoleHint: Bool = false) {
+        self.id = id; self.holeIndex = holeIndex; self.showsHoleHint = showsHoleHint
         _draft = State(initialValue: CounterDraft(score: initial.score.value))
         _expected = State(initialValue: initial.score.revision)
     }
@@ -184,6 +185,7 @@ struct ScoreEntry: View {
                 .disabled(draft.strokes == 0).opacity(draft.strokes == 0 ? 0.45 : 1)
                 Text(draft.strokes == 0 ? "まず打数の＋を押してください" : "パット＋で打数も＋1")
                     .font(.caption2).foregroundStyle(.secondary)
+                if showsHoleHint { Text("左右にスワイプでホール移動").font(.caption2).foregroundStyle(.secondary) }
                 if draft.strokes > 0 {
                     Button("このホールを未入力に戻す", role: .destructive) { confirmReset = true }
                         .font(.caption).frame(minHeight: 44)

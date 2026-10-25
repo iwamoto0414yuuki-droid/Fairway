@@ -52,6 +52,7 @@ struct ClubChoiceGrid: View {
             VStack(spacing: 10) {
                 LazyVGrid(columns: columns, spacing: 5) {
                     ForEach(Club.bag) { club in
+                        if club == .putter { Color.clear.frame(height: 50).accessibilityHidden(true) }
                         Button { choose(club) } label: {
                             VStack(spacing: 1) {
                                 HStack(spacing: 1) {
