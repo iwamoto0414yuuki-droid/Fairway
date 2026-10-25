@@ -84,8 +84,8 @@ def apply(app, lib):
     start=s.index('        if let Some(plist::Value::String(s)) = status.get("au") {')
     end=s.index('\n    pub async fn get_app_token',start)
     s=s[:start]+'''        let state = auth_backport_login_state(status);
-        if matches!(state, LoginState::NeedsDevice2FAVerification) {
-            self.update_trusted_numbers().await;
+        if matches!(state, LoginState::NeedsDevice2FAVerification) && self.trusted_phone_numbers.is_none() {
+            self.trusted_phone_numbers = self.get_trusted_numbers().await.ok();
         }
         Ok(state)
     }
