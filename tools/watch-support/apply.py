@@ -14,6 +14,37 @@ def replace(root, path, before, after):
 
 
 def apply(store, sign):
+    # Explicit protocol selection must reach the first parse, not only the save.
+    path = 'SideStore/Core/Pairing/PairingFileManager.swift'
+    replace(store, path,
+            'func inspectPairingFile(from url: URL) throws -> (content: String, file: any PairingFile)',
+            'func inspectPairingFile(from url: URL, preferred: PairingProtocol? = nil) throws -> (content: String, file: any PairingFile)')
+    replace(store, path,
+            'let parsed = try parse(content: content, preferred: nil)',
+            'let parsed = try parse(content: content, preferred: preferred)')
+    replace(store, path,
+            'let (content, _) = try inspectPairingFile(from: url)',
+            'let (content, _) = try inspectPairingFile(from: url, preferred: preferred)')
+    path = 'SideStore/Views/Onboarding/OnboardingView.swift'
+    replace(store, path, 'import Minimuxer\n', 'import Minimuxer\nimport MinimuxerCommon\n')
+    replace(store, path,
+            '    @State private var hasPairingFile = PairingFileManager.shared.hasPairingFile()',
+            '    @State private var selectedPairingProtocol: PairingProtocol = .lockdown\n    @State private var hasPairingFile = PairingFileManager.shared.hasPairingFile()')
+    replace(store, path,
+            '            if hasPairingFile {\n                HStack(spacing: 8) {',
+            '            VStack(spacing: 4) {\n'
+            '                Picker("Pairing Protocol", selection: $selectedPairingProtocol) {\n'
+            '                    Text("Lockdown (Windows USB)").tag(PairingProtocol.lockdown)\n'
+            '                    Text("Remote Pairing").tag(PairingProtocol.rppairing)\n'
+            '                }.pickerStyle(.menu)\n'
+            '                Text("Fairway試験版：WindowsのLoaderから渡したファイルはLockdownを選びます。")\n'
+            '                    .font(.caption).foregroundColor(.secondary).multilineTextAlignment(.center)\n'
+            '            }.padding(.horizontal, 24)\n\n'
+            '            if hasPairingFile {\n                HStack(spacing: 8) {')
+    replace(store, path,
+            'try PairingFileManager.shared.importPairingFile(from: url)',
+            'try PairingFileManager.shared.importPairingFile(from: url, preferred: selectedPairingProtocol)\n'
+            '                    PairingFileManager.shared.preferredProtocol = selectedPairingProtocol')
     shutil.copyfile(OVERLAYS/'SideSign/WatchBundleSupport.swift', sign/'Sources/Models/WatchBundleSupport.swift')
     shutil.copyfile(OVERLAYS/'SideSign/WatchSupportTests.swift', sign/'Tests/SideSignTests/WatchSupportTests.swift')
     shutil.copyfile(OVERLAYS/'SideStore/WatchSupportSettings.swift', store/'SideStore/Core/WatchSupportSettings.swift')
