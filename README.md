@@ -26,6 +26,7 @@ Watchへの導入を優先し、GPS・地図を外しました。打数、パッ
 - [個人用SideStoreのソース・ライセンス・ビルド手順](tools/watch-support/SOURCE.md)
 - [調査と改修箇所](docs/SIDESTORE_WATCH_FEASIBILITY.md)
 - [追加検証と導入方法の比較](docs/WATCH_RECHECK.md)
+- [Watch対応iloaderの認証失敗の詳しい調査](docs/ILOADER_AUTH_INVESTIGATION.md)
 - [現行版の検証範囲](docs/VALIDATION.md)
 - [0.2.0の開発記録](docs/README_0.2.0_ARCHIVE.md)
 

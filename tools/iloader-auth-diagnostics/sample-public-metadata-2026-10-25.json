@@ -1,0 +1,40 @@
+{
+  "checked_at_utc": "2026-10-25T03:41:35.492422+00:00",
+  "apple_login_attempted": false,
+  "account_data_accessed": false,
+  "note": "Current public metadata does not establish server state during the earlier failures.",
+  "results": [
+    {
+      "server": "https://ani.sidestore.io",
+      "endpoint": "/v3/client_info",
+      "http_status": 200,
+      "client_info": "<MacBookPro13,2> <macOS;13.1;22C65> <com.apple.AuthKit/1 (com.apple.akd/1.0)>",
+      "user_agent": "akd/1.0 CFNetwork/808.1.4",
+      "old_watch_build_pair_matches": false
+    },
+    {
+      "server": "https://new.ani.sidestore.io",
+      "endpoint": "/v3/client_info",
+      "http_status": 200,
+      "client_info": "<MacBookPro13,3> <Mac OS X;10.12.6;16G29> <com.apple.AuthKit/1 (com.apple.akd/1.0)>",
+      "user_agent": "akd/1.0 CFNetwork/811.5.4 Darwin/16.7.0",
+      "old_watch_build_pair_matches": false
+    },
+    {
+      "server": "https://ani.jkcoxson.com",
+      "endpoint": "/v3/client_info",
+      "http_status": 200,
+      "client_info": "<MacBookPro13,3> <Mac OS X;10.12.6;16G29> <com.apple.AuthKit/1 (com.apple.akd/1.0)>",
+      "user_agent": "akd/1.0 CFNetwork/811.5.4 Darwin/16.7.0",
+      "old_watch_build_pair_matches": false
+    },
+    {
+      "server": "https://ani.iloader.app",
+      "endpoint": "/v3/client_info",
+      "http_status": 200,
+      "client_info": "<MacBookPro13,3> <Mac OS X;10.12.6;16G29> <com.apple.AuthKit/1 (com.apple.akd/1.0)>",
+      "user_agent": "akd/1.0 CFNetwork/811.5.4 Darwin/16.7.0",
+      "old_watch_build_pair_matches": false
+    }
+  ]
+}
