@@ -17,8 +17,8 @@ assert exe.is_file() and exe.read_bytes()[:2] == b'MZ'
 shutil.copyfile(exe, out/'Fairway-Watch-Loader.exe')
 log = (root/'auth-tests.log').read_text(encoding='utf-8-sig')
 assert re.search(r'test result: ok\. \d+ passed; 0 failed;', log)
-auth = [line for line in log.splitlines() if 'test anisette::' in line and 'auth_backport_' in line and line.rstrip().endswith(' ... ok')]
-assert len(auth) == 14, len(auth)
+auth = [line for line in log.splitlines() if line.startswith('test ') and 'auth_backport_' in line and line.rstrip().endswith(' ... ok')]
+assert len(auth) == 21, len(auth)
 shutil.copyfile(root/'auth-tests.log',out/'offline-tests.log')
 shutil.copyfile(root/'watch-auth-patch.json',out/'patch-manifest.json')
 notice = []
@@ -51,6 +51,19 @@ with zipfile.ZipFile(source,'w',zipfile.ZIP_DEFLATED) as archive:
             key=(p['name'],p['version'])
             if key not in copied:
                 add_tree(archive,directory,'ThirdPartySources/'+p['name']+'-'+p['version']);copied.add(key)
+npm_seen=set()
+for manifest in (app/'node_modules').rglob('package.json'):
+    if manifest.is_symlink(): continue
+    try: package=json.loads(manifest.read_text(encoding='utf-8'))
+    except (ValueError,UnicodeError): continue
+    name,version=package.get('name'),package.get('version')
+    if not name or not version or (name,version) in npm_seen: continue
+    npm_seen.add((name,version))
+    notice.append('\n=== npm '+name+' '+version+' ===\nLicense: '+str(package.get('license'))+'\n')
+    for pattern in ('LICENSE*','LICENCE*','COPYING*','NOTICE*'):
+        for f in manifest.parent.glob(pattern):
+            if f.is_file() and f.resolve().is_relative_to((app/'node_modules').resolve()):
+                notice.append('\n'+f.name+'\n'+f.read_text(encoding='utf-8',errors='replace'))
 (out/'THIRD-PARTY-NOTICES.txt').write_text('\n'.join(notice),encoding='utf-8')
 (out/'00_README.txt').write_text(
     'Fairway Watch Loader — 個人用・非公式の認証更新試験版\n'
@@ -73,7 +86,7 @@ report={'ipa_not_required_for_auth_check':True,'auth_backport_tests_passed':len(
         'app_identifier':'local.fairway.watchloader.auth20261025','keyring_service':'fairway-watch-loader-auth-20261025',
         'default_anisette_server':'https://ani.jkcoxson.com','server_metadata_cached_per_session':True,
         'automatic_certificate_revocation':False,'physical_login_verified':False,'physical_watch_install_verified':False,
-        'windows_code_signature':'NotSigned','dependency_count':len(packages),
+        'windows_code_signature':'NotSigned','dependency_count':len(packages),'npm_dependency_count':len(npm_seen),
         'copyleft_dependency_sources_included':len(copied)}
 (out/'verification.json').write_text(json.dumps(report,indent=2)+'\n')
 print(json.dumps(report))

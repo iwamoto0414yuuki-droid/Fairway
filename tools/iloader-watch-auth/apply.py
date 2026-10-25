@@ -79,11 +79,41 @@ def apply(app, lib):
             'impl GrandSlam {\n    #[cfg(test)]\n    pub(crate) fn offline_auth_fixture() -> Self {\n        Self { client: Self::build_reqwest_client(false, None).unwrap(), client_info: AnisetteClientInfo { client_info: "offline".into(), user_agent: "offline".into() }, url_bag: Dictionary::new() }\n    }')
     replace(lib, 'isideload/src/auth/grandslam.rs', '        Ok(headers)\n    }',
             '        headers.insert(reqwest::header::CONNECTION, HeaderValue::from_static("close"));\n        Ok(headers)\n    }')
+    path='isideload/src/auth/apple_account.rs'
+    p=lib/path;s=p.read_text(encoding='utf-8')
+    start=s.index('        if let Some(plist::Value::String(s)) = status.get("au") {')
+    end=s.index('\n    pub async fn get_app_token',start)
+    s=s[:start]+'''        let state = auth_backport_login_state(status);
+        if matches!(state, LoginState::NeedsDevice2FAVerification) {
+            self.update_trusted_numbers().await;
+        }
+        Ok(state)
+    }
+''' +s[end:]
+    s+='\n'+(HERE/'login_state.rs').read_text(encoding='utf-8')
+    p.write_text(s,encoding='utf-8',newline='\n')
 
     # App identity, keyring service and app-data directory are distinct from stock iloader.
     for path in ('src-tauri/src/account.rs', 'src-tauri/src/secure_storage.rs'):
         p=app/path;s=p.read_text(encoding='utf-8');assert '"iloader"' in s
         p.write_text(s.replace('"iloader"', json.dumps(SERVICE)), encoding='utf-8', newline='\n')
+    # Reset only this build's active-server ADI key, including its filesystem fallback.
+    p=app/'src-tauri/src/account.rs';s=p.read_text(encoding='utf-8')
+    start=s.index('pub fn reset_anisette_state()')
+    end=s.index('\nasync fn login(',start)
+    s=s[:start]+'''pub fn reset_anisette_state(handle: AppHandle, anisette_server: String) -> Result<bool, AppError> {
+    let url = if anisette_server.starts_with("http") { anisette_server } else { format!("https://{}", anisette_server) };
+    let key = format!("watch_auth_v2_{}", hex::encode(url.trim_end_matches('/').as_bytes()));
+    let storage = create_sideloading_storage(&handle)?;
+    storage.delete(&key)?;
+    Ok(true)
+}
+''' + s[end:]
+    p.write_text(s,encoding='utf-8',newline='\n')
+    replace(app, 'src/pages/Settings.tsx', 'invoke("reset_anisette_state")',
+            'invoke("reset_anisette_state", { anisetteServer })')
+    # hex is already used by the library; declare it explicitly for this app helper.
+    replace(app, 'src-tauri/Cargo.toml', '[dependencies]', '[dependencies]\nhex = "0.4.3"')
     replace(app, 'src-tauri/Cargo.toml',
             'isideload = { version = "0.3.17", features = ["fs-storage"], git = "https://github.com/Rzbck/isideload", package = "isideload", rev = "'+LIB_REF+'" }',
             'isideload = { path = "../../isideload/isideload", features = ["fs-storage"] }')
