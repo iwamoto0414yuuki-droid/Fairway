@@ -1,5 +1,11 @@
 # Watch Loader：証明書上限7460への対応
 
+## 利用者による実機確認（2026-10-25）
+
+利用者から、②のWatch Loaderによるインストール完了とApple WatchでのFairway起動成功の報告を受けた。今後は②を使用する方針。期限更新後のWatch起動、スコア保存・同期の検証とは分けて扱う。
+Fairwayの更新はWindowsの同じWatch Loader・同じApple Account・元のIPAで行う。Fairwayだけの導入・更新にSideStoreは使わない。他のアプリにSideStoreを使う場合は残す。
+iPhone版FairwayはWatch版の同梱元であり、スコアの閲覧・同期にも使うため残す。Watchの独立実行設定は、iPhone版を削除する運用を確認したことを意味しない。
+
 2026-10-25。対象版：2.3.1-auth.20261025.2。
 
 利用者の前版でのエラーは `Failed to retrieve certificate identity / Developer error 7460`。
