@@ -35,7 +35,7 @@ final class Store: NSObject, ObservableObject, WCSessionDelegate {
         }
     }
 
-    func round(_ id: UUID) -> Round? { library.rounds.first { $0.id == id } }
+    func round(_ id: UUID) -> Round? { library.visibleRounds.first { $0.id == id } }
     private func revision() -> Revision {
         Revision(counter: (library.rounds.map(\.maxCounter).max() ?? 0) + 1, device: device)
     }
@@ -46,7 +46,7 @@ final class Store: NSObject, ObservableObject, WCSessionDelegate {
         do {
             try JSONEncoder().encode(next).write(to: file, options: .atomic)
             library = next
-            if send, let merged = self.round(round.id) { enqueue(merged) }
+            if send, let merged = library.rounds.first(where: { $0.id == round.id }) { enqueue(merged) }
             return true
         } catch { self.error = "保存に失敗しました。画面を閉じずに再試行してください。\(error.localizedDescription)"; return false }
     }
@@ -82,6 +82,11 @@ final class Store: NSObject, ObservableObject, WCSessionDelegate {
         guard var round = round(id) else { return }
         round.finished = Value(value: value, revision: revision()); commit(round)
     }
+    @discardableResult func delete(_ id: UUID) -> Bool {
+        guard var round = round(id) else { return false }
+        round.deletion = Value(value: true, revision: revision())
+        return commit(round)
+    }
     func resend(_ id: UUID) { if let round = round(id) { enqueue(round) } }
     private func enqueue(_ round: Round) {
         guard let session, session.activationState == .activated else { syncStatus = "端末に保存・接続待ち"; return }
@@ -99,7 +104,10 @@ final class Store: NSObject, ObservableObject, WCSessionDelegate {
         DispatchQueue.main.async {
             if error != nil { self.syncStatus = "端末に保存・接続失敗"; return }
             // Retry latest state after launch; queued transfers survive disconnection.
-            if let round = self.library.rounds.first { self.enqueue(round) }
+            // Persisted deletion markers must reach an offline peer even when
+            // the deletion was not the most recent round. No polling or timer.
+            for round in self.library.rounds where round.isDeleted { self.enqueue(round) }
+            if let round = self.library.visibleRounds.first { self.enqueue(round) }
         }
     }
     func session(_ session: WCSession, didReceiveUserInfo userInfo: [String: Any] = [:]) {

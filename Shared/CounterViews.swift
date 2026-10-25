@@ -9,16 +9,18 @@ struct HomeView: View {
         NavigationStack {
             List {
                 Section("ラウンドをはじめる") {
-                    Button("18ホール") { activeRound = store.create(course: "ラウンド", count: 18) }
-                    Button("9ホール") { activeRound = store.create(course: "ラウンド", count: 9) }
+                    Button("18ホールで開始") { activeRound = store.create(course: "ラウンド", count: 18) }
+                    Button("9ホールで開始") { activeRound = store.create(course: "ラウンド", count: 9) }
                 }
                 Section("保存したスコア") {
-                    ForEach(store.library.rounds) { round in
-                        NavigationLink { RoundView(id: round.id) } label: {
+                    if store.library.visibleRounds.isEmpty { Text("まだ記録がありません").foregroundStyle(.secondary) }
+                    ForEach(store.library.visibleRounds) { round in
+                        NavigationLink { SavedRoundView(id: round.id) } label: {
                             VStack(alignment: .leading) {
                                 Text(round.date, style: .date)
                                 Text("\(round.total)打 · \(round.summary.putts)パット · \(round.played)/\(round.holes.count)H")
                                     .font(.caption).foregroundStyle(.secondary)
+                                Text("見る・修正・削除").font(.caption2).foregroundStyle(fairwayGreen)
                             }
                         }
                     }
@@ -54,7 +56,7 @@ struct RoundView: View {
                 ScrollView { ScoreCard(id: id) }.tag(round.holes.count)
             }
             .tabViewStyle(.page(indexDisplayMode: .automatic))
-            .navigationTitle(selected == round.holes.count ? "スコア集計" : "\(selected < 9 ? "OUT" : "IN") \(selected % 9 + 1) / Total \(round.total)")
+            .navigationTitle(selected == round.holes.count ? "スコア集計" : "\(selected + 1)ホール")
             #else
             List {
                 Section { ScoreCard(id: id) }
@@ -71,6 +73,49 @@ struct RoundView: View {
                 }
             }.navigationTitle("スコアカード")
             #endif
+        }
+    }
+}
+
+struct SavedRoundView: View {
+    @EnvironmentObject var store: Store
+    @Environment(\.dismiss) private var dismiss
+    let id: UUID
+    @State private var confirmDelete = false
+    var body: some View {
+        if let round = store.round(id) {
+            List {
+                Section {
+                    Text(round.date, style: .date)
+                    ScoreCard(id: id)
+                    NavigationLink("続きから入力") { RoundView(id: id) }
+                }
+                Section {
+                    Button(role: .destructive) { confirmDelete = true } label: {
+                        Label("このラウンドを削除", systemImage: "trash").frame(minHeight: 44)
+                    }
+                }
+                Section("ホールを選んで修正") {
+                    ForEach(Array(round.holes.enumerated()), id: \.element.id) { index, hole in
+                        NavigationLink { ScoreEntry(id: id, holeIndex: index, initial: hole) } label: {
+                            VStack(alignment: .leading, spacing: 3) {
+                                Text("\(index + 1)ホール")
+                                Text(hole.score.value.map { "\($0.strokes)打・\($0.putts ?? 0)パット" } ?? "未入力")
+                                    .font(.caption).foregroundStyle(.secondary)
+                            }.frame(minHeight: 44)
+                        }
+                    }
+                }
+            }
+            .navigationTitle("保存したスコア")
+            .alert("このラウンドを削除しますか？", isPresented: $confirmDelete) {
+                Button("削除する", role: .destructive) { if store.delete(id) { dismiss() } }
+                Button("キャンセル", role: .cancel) { }
+            } message: {
+                Text("\(round.date.formatted(date: .numeric, time: .omitted))の全ホールの記録を削除します。接続後、もう一方の端末にも反映されます。")
+            }
+        } else {
+            VStack { Text("この記録は削除されました"); Button("一覧に戻る") { dismiss() } }
         }
     }
 }
@@ -111,42 +156,47 @@ struct ScoreEntry: View {
     @State private var draft: CounterDraft
     @State private var expected: Revision
     @State private var pendingSync = false
+    @State private var confirmReset = false
     init(id: UUID, holeIndex: Int, initial: Hole) {
         self.id = id; self.holeIndex = holeIndex
         _draft = State(initialValue: CounterDraft(score: initial.score.value))
         _expected = State(initialValue: initial.score.revision)
     }
     var body: some View {
-        GeometryReader { geometry in
-            let height = max(1, min(360, geometry.size.height - 16))
-            VStack(spacing: height * 0.02) {
-                HStack(spacing: 5) {
-                    counterButton("−", label: "打数を1減らす", disabled: draft.strokes == 0) { edit { $0.changeStroke(-1) } }
-                    counterButton("−", label: "パットを1減らす", disabled: draft.putts == 0) { edit { $0.changePutt(-1) } }
-                        .frame(width: geometry.size.width * 0.29)
-                }.frame(height: height * 0.2)
-                HStack(alignment: .firstTextBaseline, spacing: 4) {
-                    Text("\(draft.strokes)").font(.system(size: min(height * 0.32, 100), weight: .medium, design: .rounded))
-                        .frame(maxWidth: .infinity).accessibilityLabel("打数 \(draft.strokes)")
-                    Text("\(draft.putts)").font(.system(size: min(height * 0.24, 62), weight: .medium, design: .rounded))
-                        .frame(width: geometry.size.width * 0.29).accessibilityLabel("パット数 \(draft.putts)")
-                }.monospacedDigit().minimumScaleFactor(0.6).frame(height: height * 0.4)
-                HStack(spacing: 5) {
-                    counterButton("＋", label: "打数を1増やす", disabled: draft.strokes >= 30) { edit { $0.changeStroke(1) } }
-                    counterButton("＋", label: "パットを1増やす（打数も増えます）", disabled: draft.strokes >= 30) { edit { $0.changePutt(1) } }
-                        .frame(width: geometry.size.width * 0.29)
-                }.frame(height: height * 0.2)
+        ScrollView {
+            VStack(spacing: 6) {
+                counterRow("打数", value: draft.strokes,
+                    minusLabel: "打数を1減らす", plusLabel: "打数を1増やす",
+                    minusDisabled: draft.strokes == 0, plusDisabled: draft.strokes >= 30,
+                    minus: { edit { $0.changeStroke(-1) } }, plus: { edit { $0.changeStroke(1) } })
+                counterRow("うちパット", value: draft.putts,
+                    minusLabel: "パットを1減らす", plusLabel: "パットを1増やす。打数も1増えます",
+                    minusDisabled: draft.putts == 0, plusDisabled: draft.strokes >= 30,
+                    minus: { edit { $0.changePutt(-1) } }, plus: { edit { $0.changePutt(1) } })
                 NavigationLink {
                     ClubEditor(clubs: Binding(get: { draft.clubs }, set: { clubs in edit { $0.clubs = clubs } }), strokes: draft.strokes)
-                } label: { Text("クラブ（任意）").font(.caption2) }
-                .buttonStyle(.plain).frame(maxWidth: .infinity).frame(height: height * 0.14)
-                .disabled(draft.strokes == 0)
-            }
-            .frame(height: height)
+                } label: {
+                    HStack { Text("クラブを記録"); Text("任意").font(.caption2).foregroundStyle(.secondary) }
+                        .frame(maxWidth: .infinity, minHeight: 44)
+                }
+                .buttonStyle(.plain)
+                .background(Color(white: 0.18), in: RoundedRectangle(cornerRadius: 10))
+                .disabled(draft.strokes == 0).opacity(draft.strokes == 0 ? 0.45 : 1)
+                Text(draft.strokes == 0 ? "まず打数の＋を押してください" : "パット＋で打数も＋1")
+                    .font(.caption2).foregroundStyle(.secondary)
+                if draft.strokes > 0 {
+                    Button("このホールを未入力に戻す", role: .destructive) { confirmReset = true }
+                        .font(.caption).frame(minHeight: 44)
+                }
+            }.padding(.horizontal, 2)
         }
+        .confirmationDialog("このホールの記録を消しますか？", isPresented: $confirmReset, titleVisibility: .visible) {
+            Button("未入力に戻す", role: .destructive) { edit { $0 = CounterDraft(score: nil) } }
+            Button("キャンセル", role: .cancel) { }
+        } message: { Text("このホールの打数・パット・クラブ記録を消します。") }
         #if os(iOS)
         .frame(minHeight: 360, maxHeight: 470).padding()
-        .navigationTitle("\(holeIndex + 1)H")
+        .navigationTitle("\(holeIndex + 1)ホール")
         #endif
         .onDisappear { sync() }
         .onChange(of: scenePhase) { phase in if phase != .active { sync() } }
@@ -157,10 +207,24 @@ struct ScoreEntry: View {
             }
         }
     }
+    private func counterRow(_ title: String, value: Int, minusLabel: String, plusLabel: String,
+                            minusDisabled: Bool, plusDisabled: Bool,
+                            minus: @escaping () -> Void, plus: @escaping () -> Void) -> some View {
+        HStack(spacing: 5) {
+            VStack(alignment: .leading, spacing: 0) {
+                Text(title).font(.system(size: 11)).lineLimit(1).minimumScaleFactor(0.8)
+                Text("\(value)").font(.system(size: 34, weight: .semibold, design: .rounded))
+                    .monospacedDigit().lineLimit(1).minimumScaleFactor(0.75)
+            }.frame(maxWidth: .infinity, alignment: .leading).accessibilityElement(children: .combine)
+            counterButton("−", label: minusLabel, disabled: minusDisabled, action: minus)
+            counterButton("＋", label: plusLabel, disabled: plusDisabled, action: plus)
+        }.frame(minHeight: 50)
+    }
     private func counterButton(_ text: String, label: String, disabled: Bool, action: @escaping () -> Void) -> some View {
-        Button(action: action) { Text(text).font(.title3).bold().frame(maxWidth: .infinity, maxHeight: .infinity) }
-            .buttonStyle(.plain).background(Color(white: 0.14), in: RoundedRectangle(cornerRadius: 9))
-            .disabled(disabled).opacity(disabled ? 0.4 : 1).accessibilityLabel(label)
+        Button(action: action) { Text(text).font(.title3).bold().frame(width: 44, height: 44) }
+            .buttonStyle(.plain).foregroundStyle(text == "＋" ? Color.black : Color.white)
+            .background(text == "＋" ? fairwayGreen : Color(white: 0.18), in: RoundedRectangle(cornerRadius: 10))
+            .disabled(disabled).opacity(disabled ? 0.35 : 1).accessibilityLabel(label)
     }
     private func edit(_ change: (inout CounterDraft) -> Void) {
         var next = draft; change(&next)

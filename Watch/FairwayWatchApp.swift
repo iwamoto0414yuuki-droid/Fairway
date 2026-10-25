@@ -34,13 +34,19 @@ private struct WatchPreview: View {
         NavigationStack {
             if mode == "--preview-clubs" {
                 ClubEditor(clubs: .constant([.driver, .iron7, .sw, .putter, .putter] + Array<Club?>(repeating: nil, count: 25)), strokes: 5)
+            } else if mode == "--preview-club-grid" {
+                ClubChoiceGrid(stroke: 1, selected: .driver, onSelect: { _ in true })
+            } else if mode == "--preview-home" {
+                HomeView()
+            } else if mode == "--preview-saved" {
+                SavedRoundView(id: round.id)
             } else if mode == "--preview-summary" {
                 List {
                     SummaryRow(title: "前半（1〜9H）", summary: round.frontSummary)
                     if let back = round.backSummary { SummaryRow(title: "後半（10〜18H）", summary: back) }
                     SummaryRow(title: "全体", summary: round.summary)
                 }.navigationTitle("スコア集計")
-            } else { ScoreEntry(id: round.id, holeIndex: 0, initial: round.holes[0]) }
+            } else { ScoreEntry(id: round.id, holeIndex: 0, initial: round.holes[0]).navigationTitle("1ホール") }
         }
             .environmentObject(store).tint(fairwayGreen).preferredColorScheme(.dark)
     }

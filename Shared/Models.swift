@@ -33,7 +33,7 @@ struct Coordinate: Codable, Equatable {
 }
 
 enum Club: String, Codable, CaseIterable, Identifiable {
-    case driver, wood3, wood5, wood7, hybrid3, hybrid4, hybrid5
+    case driver, wood3, wood5, wood7, hybrid3, hybrid4, hybrid5, hybrid6
     case iron3, iron4, iron5, iron6, iron7, iron8, iron9
     case pw, aw, sw, lw, putter, penalty
     var id: String { rawValue }
@@ -46,6 +46,7 @@ enum Club: String, Codable, CaseIterable, Identifiable {
         case .hybrid3: return "3UT"
         case .hybrid4: return "4UT"
         case .hybrid5: return "5UT"
+        case .hybrid6: return "6UT"
         case .iron3: return "3I"
         case .iron4: return "4I"
         case .iron5: return "5I"
@@ -65,7 +66,7 @@ enum Club: String, Codable, CaseIterable, Identifiable {
         switch self {
         case .driver: return "ドライバー（1W）"
         case .wood3, .wood5, .wood7: return "\(shortName) ウッド"
-        case .hybrid3, .hybrid4, .hybrid5: return "\(shortName) ユーティリティ"
+        case .hybrid3, .hybrid4, .hybrid5, .hybrid6: return "\(shortName) ユーティリティ"
         case .iron3, .iron4, .iron5, .iron6, .iron7, .iron8, .iron9: return "\(shortName) アイアン"
         case .pw: return "PW ピッチングウェッジ"
         case .aw: return "AW アプローチウェッジ"
@@ -73,6 +74,19 @@ enum Club: String, Codable, CaseIterable, Identifiable {
         case .lw: return "LW ロブウェッジ"
         case .putter: return "パター"
         case .penalty: return "罰打（クラブなし）"
+        }
+    }
+    // Keep legacy cases decodable; the visible bag follows the user's ten clubs.
+    static let bag: [Club] = [.driver, .wood5, .hybrid6, .iron5, .iron6, .iron7, .iron8, .iron9, .pw, .putter]
+    var kindName: String {
+        switch self {
+        case .driver: return "ドライバー"
+        case .wood3, .wood5, .wood7: return "ウッド"
+        case .hybrid3, .hybrid4, .hybrid5, .hybrid6: return "ユーティリティ"
+        case .iron3, .iron4, .iron5, .iron6, .iron7, .iron8, .iron9: return "アイアン"
+        case .pw, .aw, .sw, .lw: return "ウェッジ"
+        case .putter: return "パター"
+        case .penalty: return "罰打"
         }
     }
 }
@@ -124,6 +138,9 @@ struct Round: Codable, Equatable, Identifiable {
     var course: String
     var holes: [Hole]
     var finished = Value(value: false)
+    // Optional so existing v1 libraries decode without migration or data loss.
+    var deletion: Value<Bool>? = nil
+    var isDeleted: Bool { deletion?.value == true }
     init(course: String, count: Int) {
         self.course = String(course.prefix(80))
         holes = (1...(count == 9 ? 9 : 18)).map { Hole(id: $0) }
@@ -137,23 +154,29 @@ struct Round: Codable, Equatable, Identifiable {
     var summary: ScoreSummary { ScoreSummary(holes) }
     var frontSummary: ScoreSummary { ScoreSummary(Array(holes.prefix(9))) }
     var backSummary: ScoreSummary? { holes.count == 18 ? ScoreSummary(Array(holes.suffix(9))) : nil }
-    var maxCounter: Int { (holes.flatMap(\.revisions) + [finished.revision]).map(\.counter).max() ?? 0 }
+    var revisions: [Revision] { holes.flatMap(\.revisions) + [finished.revision] + (deletion.map { [$0.revision] } ?? []) }
+    var maxCounter: Int { revisions.map(\.counter).max() ?? 0 }
     var isValid: Bool {
         [9, 18].contains(holes.count) && holes.map(\.id) == Array(1...holes.count)
         && course.count <= 80 && date.timeIntervalSince1970.isFinite
         && holes.allSatisfy { (3...6).contains($0.par.value) && ($0.green.value?.isValid ?? true) && ($0.score.value?.isValid ?? true) }
-        && (holes.flatMap(\.revisions) + [finished.revision]).allSatisfy { $0.counter >= 0 && $0.counter < Int.max - 1 && $0.device.count <= 80 }
+        && revisions.allSatisfy { $0.counter >= 0 && $0.counter < Int.max - 1 && $0.device.count <= 80 }
     }
     mutating func merge(_ other: Round) {
         guard id == other.id, holes.count == other.holes.count, other.isValid else { return }
         for index in holes.indices { holes[index].merge(other.holes[index]) }
         finished.merge(other.finished)
+        if let incoming = other.deletion {
+            if deletion == nil { deletion = incoming }
+            else { deletion?.merge(incoming) }
+        }
     }
 }
 
 struct Library: Codable, Equatable {
     var schema = 1
     var rounds: [Round] = []
+    var visibleRounds: [Round] { rounds.filter { !$0.isDeleted } }
     mutating func merge(_ round: Round) {
         guard round.isValid else { return }
         if let index = rounds.firstIndex(where: { $0.id == round.id }) { rounds[index].merge(round) }

@@ -54,10 +54,10 @@ jobs:
         run: python3 scripts/watch_preview.py
       - uses: actions/upload-artifact@v4
         with:
-          name: Fairway-0.3.0-minimal
+          name: Fairway-0.4.0-minimal
           path: |
-            build/Fairway-0.3.0-unsigned.ipa
-            build/Fairway-0.3.0-unsigned.ipa.sha256
+            build/Fairway-0.4.0-unsigned.ipa
+            build/Fairway-0.4.0-unsigned.ipa.sha256
             build/native-tests.log
             build/screenshots/
             build/native-watch*.png
