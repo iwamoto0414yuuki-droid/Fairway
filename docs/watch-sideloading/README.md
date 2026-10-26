@@ -1,6 +1,6 @@
 ---
 topic: reusable-watch-sideloading
-updated: 2026-10-25
+updated: 2026-10-26
 status: sidestore-fresh-watch-install-failed-investigating
 scope: self-built-ios-app-with-embedded-watch-app
 ---
@@ -14,6 +14,8 @@ scope: self-built-ios-app-with-embedded-watch-app
 **最新の実機結果を優先する。0.4.0はSideStoreでiPhoneへ入ったが、Watchへの導入は `This app couldn't be installed at this time.` で失敗。現在WatchにFairwayはない。SideStore経由のWatch新規導入・自動更新は、成功確認できていない。**
 
 下表の0.3.0起動報告時には、先に②で入れたWatchアプリが残っていた可能性がある。その起動が①で更新されたバイナリだった証拠はない。以前の報告を取り消すのではなく、証明できる範囲を限定する。調査は[今回の比較記録](WATCH_INSTALL_0.4.0.md)を参照。
+
+現在は、Astraの独立レビューに基づき、SideStore内からWatchへ届くかをアプリ転送前に確認する[通信診断](CONNECTION_PROBE.md)を作成・ビルド済み。31件のテストと成果物検査が通り、実機での診断結果を待っている。診断成功とアプリ導入成功は区別する。
 
 2026-10-25の利用者報告で確認したこと（対象アプリは0.3.0）：
 
@@ -31,7 +33,7 @@ scope: self-built-ios-app-with-embedded-watch-app
 
 ## 読む順番
 
-1. [実機で通った導入・更新手順](OPERATIONS.md)
+1. [過去の導入報告と操作手順](OPERATIONS.md)（最新の未解決事項は上記を優先）
 2. [SideStoreの改修・再ビルド・参考コード](SIDESTORE_DEVELOPMENT.md)
 3. [他アプリの未署名IPAの作り方](APP_IPA.md)
 4. [失敗・判断・利用者側の操作の履歴](HISTORY.md)

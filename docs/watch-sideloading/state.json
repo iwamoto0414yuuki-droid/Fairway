@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated": "2026-10-25",
+  "updated": "2026-10-26",
   "path_base": "repository-root",
   "entry_point": "docs/watch-sideloading/README.md",
   "current_strategy": {
@@ -65,6 +65,18 @@
       "source_commit": "ec1ca778c1ef345833400fb0ebec9bc05d9ffbfe",
       "ci_run": "https://github.com/iwamoto0414yuuki-droid/Fairway/actions/runs/40174027549",
       "offline_tests": 29
+    },
+    "sidestore_probe": {
+      "file": "release/SideStore_Watch_通信診断版_20261026/SideStore-Watch-connection-probe.ipa",
+      "sha256": "5c053ec638529a4cb694723fdf08e911480f81911c0e027522c9c0e4a165af3f",
+      "source_zip": "release/SideStore_Watch_通信診断版_20261026/SideStore-Watch-connection-probe-source.zip",
+      "source_sha256": "234582183d9d5d53c27471a03705ca06412052726d0a0c7fa598ffdf627e9ae2",
+      "source_commit": "ea1705cc6532665251e7470c5b7cd04195036cde",
+      "ci_run": "https://github.com/iwamoto0414yuuki-droid/Fairway/actions/runs/40311866519",
+      "native_unit_tests": 5,
+      "signing_tests": 26,
+      "physical_probe_verified": false,
+      "watch_install_fix": false
     }
   },
   "upstream_pins": {
@@ -97,6 +109,7 @@
     "Do not revoke certificates automatically or expose real keys/pairing/UDIDs."
   ],
   "next_physical_checks": [
+    "Run the non-destructive Watch connection probe inside SideStore after successful CI/artifact verification; collect only closed WCP stage codes.",
     "Confirm actual automatic refresh execution and error history.",
     "Confirm Watch still launches after original signature/profile expiry.",
     "Confirm score persistence/sync across updates and battery behavior.",
@@ -130,6 +143,23 @@
     "root_cause_confirmed": false,
     "loader_has_direct_watch_transfer": true,
     "sidestore_has_direct_watch_transfer": false,
-    "missing_cms_chain_hypothesis": "rejected: pinned CodeSignKit appends bundled Apple chain"
+    "missing_cms_chain_hypothesis": "rejected: pinned CodeSignKit appends bundled Apple chain",
+    "non_destructive_probe": {
+      "status": "built-verified-awaiting-physical-probe",
+      "source_commit": "ea1705cc6532665251e7470c5b7cd04195036cde",
+      "ci_run": "https://github.com/iwamoto0414yuuki-droid/Fairway/actions/runs/40311866519",
+      "document": "docs/watch-sideloading/CONNECTION_PROBE.md",
+      "physical_result": null,
+      "creates_watch_pairing": false,
+      "installs_or_deletes_apps": false,
+      "separate_rp_tunnel": true,
+      "decision_review": "Astra independent strategy and lifetime review; Sol signature audit and native probe implementation",
+      "artifact_id": 12645432908,
+      "artifact_sha256": "aaf691093a94741e99ab27e7a39ab74de178a3352ee4e7eade3cb9fc1e096ed5",
+      "native_unit_tests": 5,
+      "signing_regression_tests": 26,
+      "host_extension_ids_match_previous": true,
+      "auth_certificate_manager_sources_unchanged": true
+    }
   }
 }

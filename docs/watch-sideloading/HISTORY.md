@@ -68,3 +68,9 @@
 - [profile診断版](../WATCH_PROFILE_DIAGNOSTICS.md)、[最終Platform対応](../WATCH_IOS_FAMILY_PROFILE_FIX.md)
 
 これらは過去時点の記録。現在の実機確認状況は[入口](README.md)と[state.json](state.json)を参照する。
+
+## 追加: 0.4.0の新規Watch導入失敗（2026-10-25〜26）
+
+0.4.0はSideStoreでiPhoneへ入ったがWatchへの導入は失敗し、Watchアプリはなくなった。0.3.0のRefresh後起動は、それ以前に②で入れたバイナリだった可能性を除外できない。利用者は②でのFairway入れ直しを希望せず、①で導入・自動更新する目標を明示した。
+
+Astraで独立に調査方針と接続寿命をレビューし、Solで署名差分を点検、非破壊Rust接続probeを実装した。成功LoaderとSideStoreの直接転送処理の差は確認できたが、RSDトンネルから返却ポートへ届くかは実機ゲート。共有接続を借りる案は並行heartbeatとの解放競合のため、専用の独立接続に変更した。[今回の調査](WATCH_INSTALL_0.4.0.md)と[通信診断](CONNECTION_PROBE.md)を参照する。
