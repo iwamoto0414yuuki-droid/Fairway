@@ -1,10 +1,18 @@
 # Personal SideStore Watch experiment
 
-2026-10-25 subsequent user report: installation through the iOS-family-profile fix,
-manual Refresh on iPhone, and subsequent Watch launch succeeded. Automatic refresh
-was reported configured, but actual automatic execution and launch beyond the old
-profile's expiry remain unverified. See the maintained [reuse guide](../../docs/watch-sideloading/README.md).
+2026-10-26 qualification: 0.3.0 iPhone installation and manual Refresh were reported,
+followed by a Watch launch. That Watch binary may still have been the earlier
+Loader installation. 0.4.0 now fails fresh Watch installation through SideStore;
+there is no Fairway app on Watch. Neither fresh Watch installation through
+SideStore nor automatic Watch refresh is proven. See the maintained
+[reuse guide](../../docs/watch-sideloading/README.md).
 Older build/CI records below and in artifacts retain their original verification scope.
+
+The optional non-destructive connection-probe build also modifies SideStore/idevice
+at `3e55c8486b2057e40c1f74aaaa1155c82341cf76`. Its original license and notices are
+retained in NativeIDeviceSource in the corresponding-source archive. It does not
+pair, transfer, install or delete an app. `apply_connection_probe.py` and the
+`sidestore-watch-probe.yml` workflow describe the native and Swift overlays.
 
 This is independent personal development for Fairway, not an official SideStore release or an upstream contribution. No maintainer review, issue, comment, PR, or endorsement is requested or implied.
 

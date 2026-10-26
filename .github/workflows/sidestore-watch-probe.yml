@@ -1,0 +1,99 @@
+name: Build non-destructive SideStore Watch connection probe
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: sidestore-watch-probe
+  cancel-in-progress: false
+jobs:
+  build:
+    runs-on: macos-26
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          repository: SideStore/SideStore
+          ref: d97ec133719d79916675bdaf722b82a8d091d545
+          submodules: recursive
+          path: build/SideStore
+      - uses: actions/checkout@v4
+        with:
+          repository: SideStore/idevice
+          ref: 3e55c8486b2057e40c1f74aaaa1155c82341cf76
+          path: build/SideStore/NativeIDeviceSource
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-ios
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            build/native-target
+          key: watch-probe-native-v1-${{ hashFiles('tools/watch-support/idevice/**') }}
+          restore-keys: watch-probe-native-v1-
+      - name: Apply pinned overlays
+        run: |
+          python3 tools/watch-support/apply.py build/SideStore build/SideStore/Dependencies/SideSign
+          python3 tools/watch-support/apply_connection_probe.py build/SideStore build/SideStore/NativeIDeviceSource
+      - name: Native probe unit tests
+        working-directory: build/SideStore/NativeIDeviceSource
+        env:
+          CARGO_TARGET_DIR: ${{ github.workspace }}/build/native-target
+        run: |
+          set -o pipefail
+          cargo test -p idevice-ffi --features companion_proxy --lib watch_connection_probe 2>&1 | tee ../../watch-probe-tests.log
+      - name: Build native iPhone bridge and XCFramework
+        working-directory: build/SideStore/NativeIDeviceSource
+        env:
+          CARGO_TARGET_DIR: ${{ github.workspace }}/build/native-target
+          IPHONEOS_DEPLOYMENT_TARGET: '17.0'
+        run: |
+          set -o pipefail
+          export BINDGEN_EXTRA_CLANG_ARGS="--sysroot=$(xcrun --sdk iphoneos --show-sdk-path)"
+          cargo build -p idevice-ffi --release --target aarch64-apple-ios --features companion_proxy,obfuscate 2>&1 | tee ../../watch-probe-native-build.log
+          cp ffi/idevice.h swift/include/idevice.h
+          xcodebuild -create-xcframework -library "$CARGO_TARGET_DIR/aarch64-apple-ios/release/libidevice_ffi.a" -headers swift/include -output ../NativeIDevice.xcframework
+      - uses: actions/cache@v4
+        with:
+          path: build/SideStore/Dependencies/SideSign/.build
+          key: sidesign-watch-macos26-probe-${{ github.run_id }}
+          restore-keys: sidesign-watch-macos26-
+      - name: Watch signing regression tests
+        working-directory: build/SideStore/Dependencies/SideSign
+        env:
+          FAIRWAY_TEST_IPA: ${{ github.workspace }}/tools/watch-support/fixtures/Fairway-0.3.0-unsigned.ipa
+        run: |
+          set -o pipefail
+          swift test --filter WatchSupportTests 2>&1 | tee ../../../watch-tests.log
+      - name: Build unsigned diagnostic SideStore
+        working-directory: build/SideStore
+        run: |
+          set -o pipefail
+          brew install ldid
+          make build 2>&1 | tee ../sidestore-watch-build.log
+          make fakesign ipa
+      - name: Package source and unsigned diagnostic
+        run: python3 tools/watch-support/package.py build/SideStore
+      - uses: actions/upload-artifact@v4
+        with:
+          name: SideStore-Watch-connection-probe
+          path: |
+            build/SideStore-Watch-personal.ipa
+            build/SideStore-Watch-personal-source.zip
+            build/SideStore-Watch-build.json
+            build/watch-tests.log
+            build/watch-probe-tests.log
+            build/watch-probe-native-build.log
+          if-no-files-found: error
+          retention-days: 7
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: SideStore-Watch-probe-build-diagnostics
+          path: |
+            build/*tests.log
+            build/*build.log
+          retention-days: 3

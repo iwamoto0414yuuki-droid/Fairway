@@ -5,8 +5,9 @@
   "entry_point": "docs/watch-sideloading/README.md",
   "current_strategy": {
     "normal_operation": "modified-sidestore-on-iphone",
-    "recovery": "windows-watch-loader",
-    "preferred_pairing_protocol": "rppairing"
+    "recovery": "do-not-reinstall-fairway-via-loader-user-requires-sidestore",
+    "preferred_pairing_protocol": "rppairing",
+    "status": "sidestore-fresh-watch-install-failed-investigating"
   },
   "environment": {
     "host": "Windows",
@@ -28,10 +29,12 @@
     "automatic_refresh_execution_verified": false,
     "watch_launch_after_old_profile_expiry_verified": false,
     "comprehensive_score_sync_and_battery_verified": false,
-    "confirmed_app_version": "0.3.0"
+    "confirmed_app_version": "0.3.0",
+    "watch_binary_replaced_by_sidestore_verified": false,
+    "qualification": "0.3.0 Watch launch may have used the earlier Loader installation; fresh Watch installation through SideStore is not proven."
   },
   "limitations": [
-    "Physical success applies to Fairway on this user environment, not every Watch app.",
+    "SideStore phone install and manual Refresh succeeded, but fresh Watch installation failed for 0.4.0; prior Watch launch does not establish replacement of Loader-signed binary.",
     "Automatic settings are reported configured; exact full configuration and successful execution are not recorded.",
     "Original CI verification JSON predates later user reports; keep provenance immutable and read this state for later physical results.",
     "release/ and build/ are gitignored; CI artifacts have finite retention."
@@ -117,6 +120,16 @@
     "ci_run": "https://github.com/iwamoto0414yuuki-droid/Fairway/actions/runs/40195208658",
     "native_tests": 44,
     "physical_update_verified": false,
-    "notes": "Signing baseline above remains the physically confirmed 0.3.0; 0.4.0 adds score edit/delete and club-grid UI."
+    "notes": "Native 44 tests pass; SideStore iPhone installation reported, Watch installation failed. Do not downgrade user data to 0.3.0.",
+    "watch_install_user_reported": "failed: This app could not be installed at this time; Watch app absent"
+  },
+  "current_incident": {
+    "document": "docs/watch-sideloading/WATCH_INSTALL_0.4.0.md",
+    "phone_installed": true,
+    "watch_installed": false,
+    "root_cause_confirmed": false,
+    "loader_has_direct_watch_transfer": true,
+    "sidestore_has_direct_watch_transfer": false,
+    "missing_cms_chain_hypothesis": "rejected: pinned CodeSignKit appends bundled Apple chain"
   }
 }

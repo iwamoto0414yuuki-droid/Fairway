@@ -1,7 +1,7 @@
 ---
 topic: reusable-watch-sideloading
 updated: 2026-10-25
-status: manual-refresh-and-watch-launch-reported-working
+status: sidestore-fresh-watch-install-failed-investigating
 scope: self-built-ios-app-with-embedded-watch-app
 ---
 
@@ -10,6 +10,10 @@ scope: self-built-ios-app-with-embedded-watch-app
 今後のAI・開発者は、このファイルを最初に読む。過去の調査資料には、その時点の「未確認」や、後で修正した仮説が残っている。現在の判断はこの資料群を優先し、履歴は削除せず参照する。
 
 ## 現在の到達点
+
+**最新の実機結果を優先する。0.4.0はSideStoreでiPhoneへ入ったが、Watchへの導入は `This app couldn't be installed at this time.` で失敗。現在WatchにFairwayはない。SideStore経由のWatch新規導入・自動更新は、成功確認できていない。**
+
+下表の0.3.0起動報告時には、先に②で入れたWatchアプリが残っていた可能性がある。その起動が①で更新されたバイナリだった証拠はない。以前の報告を取り消すのではなく、証明できる範囲を限定する。調査は[今回の比較記録](WATCH_INSTALL_0.4.0.md)を参照。
 
 2026-10-25の利用者報告で確認したこと（対象アプリは0.3.0）：
 
@@ -34,11 +38,11 @@ scope: self-built-ios-app-with-embedded-watch-app
 5. [新しいアプリの構造検査コード](examples/inspect_ipa.py)、[XcodeGenの最小例](examples/project.yml)、[実機ビルドの例](examples/build_unsigned.sh)
 6. [AI向けの再開情報](state.json)
 
-新版0.4.0は別途ビルド・44件テスト・画面確認済み。更新後の実機動作はまだ未確認。[変更内容](../APP_0.4.0.md)とstate.jsonのlatest_app_buildを参照。
+新版0.4.0は別途ビルド・44件テスト・画面確認済み。ただしWatchへの実機導入は失敗している。[変更内容](../APP_0.4.0.md)とstate.jsonのlatest_app_buildを参照。
 
 ## 今後の基本方針
 
-- 普段の導入・更新は①の改修版SideStore。②のWindows Loaderは初期導入・SideStoreの上書き・復旧用として残す。
+- 目標は①の改修版SideStoreからFairwayを導入し、iPhoneだけでWatch分も期限更新すること。利用者はFairwayを②から入れ直す切り分けを希望していない。②は成功した実装の比較資料として扱う。
 - Fairway本体だけの変更なら、小さいFairway IPAだけを作る。SideStore本体の再ビルドは署名・転送・認証処理の修正時に限る。
 - 他アプリではアプリID・ターゲット・capabilityを置き換える。同じApple Accountというだけで、別IDのアプリへデータが自動移行するとは考えない。
 - `watchOS`というPlatform文字列を必須にする旧検証へ戻さない。iOS系表記を許可する範囲は専用のWatch取得経路に限定する。
