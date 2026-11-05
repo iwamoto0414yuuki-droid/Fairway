@@ -1,13 +1,13 @@
 {
   "schema_version": 1,
-  "updated": "2026-10-26",
+  "updated": "2026-11-05",
   "path_base": "repository-root",
   "entry_point": "docs/watch-sideloading/README.md",
   "current_strategy": {
     "normal_operation": "modified-sidestore-on-iphone",
     "recovery": "do-not-reinstall-fairway-via-loader-user-requires-sidestore",
     "preferred_pairing_protocol": "rppairing",
-    "status": "sidestore-fresh-watch-install-failed-investigating"
+    "status": "physical-sidestore-watch-install-and-manual-refresh-verified"
   },
   "environment": {
     "host": "Windows",
@@ -21,7 +21,7 @@
   },
   "user_reported_evidence": {
     "source": "conversation with device owner",
-    "date": "2026-10-25",
+    "date": "2026-11-05",
     "loader_install_and_watch_launch": true,
     "modified_sidestore_install": true,
     "manual_refresh_and_subsequent_watch_launch": true,
@@ -29,12 +29,12 @@
     "automatic_refresh_execution_verified": false,
     "watch_launch_after_old_profile_expiry_verified": false,
     "comprehensive_score_sync_and_battery_verified": false,
-    "confirmed_app_version": "0.3.0",
-    "watch_binary_replaced_by_sidestore_verified": false,
-    "qualification": "0.3.0 Watch launch may have used the earlier Loader installation; fresh Watch installation through SideStore is not proven."
+    "confirmed_app_version": "0.4.0",
+    "watch_binary_replaced_by_sidestore_verified": true,
+    "qualification": "User confirmed direct SideStore installation on iPhone and Watch, then successful Fairway Refresh and Watch operation after the App Group fix. Automatic execution and post-expiry operation are separate checks."
   },
   "limitations": [
-    "SideStore phone install and manual Refresh succeeded, but fresh Watch installation failed for 0.4.0; prior Watch launch does not establish replacement of Loader-signed binary.",
+    "Fresh Watch install and manual Refresh followed by Watch operation are user-confirmed with the final repaired build. New apps, automatic execution, and post-expiry operation need their own checks.",
     "Automatic settings are reported configured; exact full configuration and successful execution are not recorded.",
     "Original CI verification JSON predates later user reports; keep provenance immutable and read this state for later physical results.",
     "release/ and build/ are gitignored; CI artifacts have finite retention."
@@ -75,7 +75,7 @@
       "ci_run": "https://github.com/iwamoto0414yuuki-droid/Fairway/actions/runs/40311866519",
       "native_unit_tests": 5,
       "signing_tests": 26,
-      "physical_probe_verified": false,
+      "physical_probe_verified": true,
       "watch_install_fix": false
     }
   },
@@ -109,7 +109,7 @@
     "Do not revoke certificates automatically or expose real keys/pairing/UDIDs."
   ],
   "next_physical_checks": [
-    "Run the non-destructive Watch connection probe inside SideStore after successful CI/artifact verification; collect only closed WCP stage codes.",
+    "For a new app verify complete install and repeated manual Refresh using the documented baseline; Fairway already passed manual Refresh and subsequent Watch operation.",
     "Confirm actual automatic refresh execution and error history.",
     "Confirm Watch still launches after original signature/profile expiry.",
     "Confirm score persistence/sync across updates and battery behavior.",
@@ -139,17 +139,30 @@
   "current_incident": {
     "document": "docs/watch-sideloading/WATCH_INSTALL_0.4.0.md",
     "phone_installed": true,
-    "watch_installed": false,
-    "root_cause_confirmed": false,
+    "watch_installed": true,
+    "root_cause_confirmed": true,
     "loader_has_direct_watch_transfer": true,
-    "sidestore_has_direct_watch_transfer": false,
+    "sidestore_has_direct_watch_transfer": true,
     "missing_cms_chain_hypothesis": "rejected: pinned CodeSignKit appends bundled Apple chain",
     "non_destructive_probe": {
-      "status": "built-verified-awaiting-physical-probe",
+      "status": "physical-connectivity-probe-passed",
       "source_commit": "ea1705cc6532665251e7470c5b7cd04195036cde",
       "ci_run": "https://github.com/iwamoto0414yuuki-droid/Fairway/actions/runs/40311866519",
       "document": "docs/watch-sideloading/CONNECTION_PROBE.md",
-      "physical_result": null,
+      "physical_result": {
+        "reported_by": "device owner via screenshot",
+        "date_recorded": "2026-11-04",
+        "stages": {
+          "WCP_INPUT": "OK",
+          "WCP_SERVICE": "OK",
+          "WCP_REGISTRY": "OK",
+          "WCP_FORWARD": "OK",
+          "WCP_CONNECT": "OK",
+          "WCP_IDENTITY": "OK",
+          "WCP_CLEANUP": "OK"
+        },
+        "scope": "Connectivity and identity only; pairing, installation and refresh were not tested by this probe."
+      },
       "creates_watch_pairing": false,
       "installs_or_deletes_apps": false,
       "separate_rp_tunnel": true,
@@ -160,6 +173,51 @@
       "signing_regression_tests": 26,
       "host_extension_ids_match_previous": true,
       "auth_certificate_manager_sources_unchanged": true
-    }
+    },
+    "resolution": "Repeated team suffix in Fairway App Group ID on re-sign; repaired and made idempotent. Apple detailed rejection reason unknown."
+  },
+  "online_precedent_research": {
+    "date": "2026-10-26",
+    "document": "docs/watch-sideloading/ONLINE_PRECEDENTS_20261026.md",
+    "complete_matching_watch_phone_only_refresh_success_verified": false,
+    "nonexistence_or_impossibility_claimed": false,
+    "new_transport_reference": "https://github.com/NRG-Wardog/sidestore-auto-refresh/blob/8ae1b26283f7e789956776742e0d3846d34e4e74/scripts/patch_coredevice_idevice.py",
+    "streaming_reference": "https://github.com/doronz88/pymobiledevice3/blob/v11.25.0/pymobiledevice3/services/streaming_zip_conduit.py",
+    "free_profile_watch_author_claim": "https://github.com/hayupadhyaya/xonora-ios/releases/tag/v1.0.8",
+    "current_probe_gate_unchanged": true,
+    "possible_later_checks": [
+      "CoreDevice-origin vs Remote Pairing-origin RSD service/forwarded listener availability",
+      "MSS/MTU when small identity RPC succeeds but large app streaming stalls",
+      "Bounded teardown and final install response distinct from request submission"
+    ]
+  },
+  "direct_watch_install_experiment": {
+    "date": "2026-11-04",
+    "ci_run": "https://github.com/iwamoto0414yuuki-droid/Fairway/actions/runs/41742759033",
+    "source_commit": "25bcaef56345895a5a4c1bbe5699cd3035b28171",
+    "branch": "fairway-watch-direct-ci-20261104",
+    "ipa": "release/SideStore_Watch直接導入試験版_20261104/SideStore-Watch-direct-install-unsigned.ipa",
+    "ipa_sha256": "9230b0ef0486971b50be9d1696e40d5223e829020f6823848a85e404a44a99d5",
+    "native_tests": 8,
+    "signing_tests": 26,
+    "physical_install_verified": true,
+    "physical_refresh_verified": true,
+    "automatic_refresh_execution_verified": false,
+    "note": "Experimental direct Watch install; pairing and install require physical validation. No automatic uninstall."
+  },
+  "verified_baseline": {
+    "source_commit": "cc13860",
+    "ci_run": "https://github.com/iwamoto0414yuuki-droid/Fairway/actions/runs/42030957798",
+    "ipa": "release/SideStore-Refresh-GroupFix-20261105/SideStore-Refresh-GroupFix.ipa",
+    "source_zip": "release/SideStore-Refresh-GroupFix-20261105/SideStore-Refresh-GroupFix-source.zip",
+    "ipa_sha256": "bac78a7feb5ca8f9b37fa58c917a3b8b9840353a6ffa2977a760a8f233978708",
+    "native_tests": 8,
+    "signing_tests": 27,
+    "physical_install_verified": true,
+    "physical_manual_refresh_verified": true,
+    "physical_watch_launch_after_refresh_verified": true,
+    "automatic_refresh_execution_verified": false,
+    "old_profile_expiry_survival_verified": false,
+    "evidence": "Device-owner report in this conversation; no external device telemetry."
   }
 }

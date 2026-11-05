@@ -1,7 +1,7 @@
 ---
 topic: reusable-watch-sideloading
-updated: 2026-10-26
-status: sidestore-fresh-watch-install-failed-investigating
+updated: 2026-11-05
+status: physical-install-and-manual-refresh-verified
 scope: self-built-ios-app-with-embedded-watch-app
 ---
 
@@ -9,30 +9,21 @@ scope: self-built-ios-app-with-embedded-watch-app
 
 今後のAI・開発者は、このファイルを最初に読む。過去の調査資料には、その時点の「未確認」や、後で修正した仮説が残っている。現在の判断はこの資料群を優先し、履歴は削除せず参照する。
 
-## 現在の到達点
+## 現在の到達点（2026-11-05）
 
-**最新の実機結果を優先する。0.4.0はSideStoreでiPhoneへ入ったが、Watchへの導入は `This app couldn't be installed at this time.` で失敗。現在WatchにFairwayはない。SideStore経由のWatch新規導入・自動更新は、成功確認できていない。**
+**利用者が、改修版SideStore経由でiPhone・Apple Watchへの導入、修正版でのFairwayのRefresh成功、その後のWatch動作を確認した。** 当初の導入・手動期限更新の目標を達成した。現在の成功基準は [再利用手順書](REUSE_GUIDE.md) と [state.json](state.json) を参照する。
 
-下表の0.3.0起動報告時には、先に②で入れたWatchアプリが残っていた可能性がある。その起動が①で更新されたバイナリだった証拠はない。以前の報告を取り消すのではなく、証明できる範囲を限定する。調査は[今回の比較記録](WATCH_INSTALL_0.4.0.md)を参照。
+完成基準のコードは `cc13860`、[CI 42030957798](https://github.com/iwamoto0414yuuki-droid/Fairway/actions/runs/42030957798)。通信テスト8件と署名テスト27件が成功。最終修正は [App Group ID重複の原因と修正](REFRESH_APP_GROUP_SUFFIX.md)。
 
-現在は、Astraの独立レビューに基づき、SideStore内からWatchへ届くかをアプリ転送前に確認する[通信診断](CONNECTION_PROBE.md)を作成・ビルド済み。31件のテストと成果物検査が通り、実機での診断結果を待っている。診断成功とアプリ導入成功は区別する。
+自動更新は設定済みという利用者報告があるが、自動実行ログと旧署名期限後の起動は別途未確認。他のアプリにも方法とコードを再利用できるが、実機で成功確認したアプリはFairway。
 
-2026-10-25の利用者報告で確認したこと（対象アプリは0.3.0）：
+環境はWindows、無料Apple Account、iPhone 16e、Apple Watch Series 7。Refresh障害時のiOSは本人申告27.0.1。最終時点のwatchOSは未再確認。ビルドはGitHub ActionsのMacを使用し、利用者にMacは不要だった。
 
-| 項目 | 状態・根拠 |
-| --- | --- |
-| ② Windows Watch LoaderからのFairway導入 | 利用者がインストール完了とWatchでの起動を報告 |
-| ① 改修版SideStoreからのFairway導入 | iOS系profile対応版へ更新後、利用者が完了を報告 |
-| ① iPhoneだけでの手動Refresh | 利用者がRefresh成功と、その後のWatch起動を報告 |
-| 自動更新 | 利用者が設定済みと報告。自動実行の成功ログは未確認 |
-| 旧署名の期限後も起動可能か | まだ未確認。Refresh直後の起動だけでは長期更新を証明しない |
-| スコア保存・同期・電池持ちの実地総合検証 | 本資料では成功と断定しない。個別に確認する |
-| 他のWatchアプリへの適用 | 設計とコードを再利用可能。実機成功を確認したアプリはFairwayのみ |
-
-利用者環境：Windows、無料Apple Account、iPhone 16e、Apple Watch Series 7。OSは本人申告でiOS 26.6.2／watchOS 26.6。OS表記はツールで再確認した値ではない。Macは使えないため、ビルドはGitHub ActionsのMac環境を使用した。
+以下にリンクする過去資料には当時の失敗・未確認状態が残る。履歴として保存しており、この最新結果を優先する。
 
 ## 読む順番
 
+0. [完成版を使う・他アプリに再利用する手順](REUSE_GUIDE.md)
 1. [過去の導入報告と操作手順](OPERATIONS.md)（最新の未解決事項は上記を優先）
 2. [SideStoreの改修・再ビルド・参考コード](SIDESTORE_DEVELOPMENT.md)
 3. [他アプリの未署名IPAの作り方](APP_IPA.md)
@@ -40,7 +31,7 @@ scope: self-built-ios-app-with-embedded-watch-app
 5. [新しいアプリの構造検査コード](examples/inspect_ipa.py)、[XcodeGenの最小例](examples/project.yml)、[実機ビルドの例](examples/build_unsigned.sh)
 6. [AI向けの再開情報](state.json)
 
-新版0.4.0は別途ビルド・44件テスト・画面確認済み。ただしWatchへの実機導入は失敗している。[変更内容](../APP_0.4.0.md)とstate.jsonのlatest_app_buildを参照。
+新版0.4.0は44件テスト・画面確認済み。過去のWatch導入失敗は改修版SideStoreの直接転送とApp Group修正により解消した。[変更内容](../APP_0.4.0.md)とstate.jsonのlatest_app_buildを参照。
 
 ## 今後の基本方針
 

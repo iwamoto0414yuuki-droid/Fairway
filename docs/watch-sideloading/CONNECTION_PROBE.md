@@ -48,4 +48,4 @@ Watchへのpair/session、アプリ送信、導入、削除、証明書変更は
 
 2026-10-26、[CI 40311866519](https://github.com/iwamoto0414yuuki-droid/Fairway/actions/runs/40311866519)成功。対象ソース `ea1705cc6532665251e7470c5b7cd04195036cde`。Rustの通信診断単体テスト5件、既存のWatch署名回帰テスト26件が成功し、iPhone用native libraryとSideStore実機用アーカイブを作成できた。
 
-ダウンロード後、GitHub artifactのSHA256、IPA・対応ソースZIPのハッシュ、IPA内の診断コード、旧版と同じhost/extension ID、認証・証明書管理ソースの不変、独立接続コードの同梱を検査済み。IPAのSHA256は `5c053ec638529a4cb694723fdf08e911480f81911c0e027522c9c0e4a165af3f`。再検査は `tools/watch-support/verify_connection_probe_build.py`、配布フォルダの `verification.json` と `SHA256.txt` を参照する。実機の診断結果は未取得。
+ダウンロード後、GitHub artifactのSHA256、IPA・対応ソースZIPのハッシュ、IPA内の診断コード、旧版と同じhost/extension ID、認証・証明書管理ソースの不変、独立接続コードの同梱を検査済み。IPAのSHA256は `5c053ec638529a4cb694723fdf08e911480f81911c0e027522c9c0e4a165af3f`。再検査は `tools/watch-support/verify_connection_probe_build.py`、配布フォルダの `verification.json` と `SHA256.txt` を参照する。2026-11-04、利用者提供の画面で7項目すべて passed=true code=OK を確認。通信とWatchのID一致を示す結果であり、pair/session・導入・更新の成功は示さない。
