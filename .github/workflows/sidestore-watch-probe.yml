@@ -40,6 +40,7 @@ jobs:
           python3 tools/watch-support/apply.py build/SideStore build/SideStore/Dependencies/SideSign
           python3 tools/watch-support/apply_connection_probe.py build/SideStore build/SideStore/NativeIDeviceSource
           python3 tools/watch-support/apply_watch_install.py build/SideStore build/SideStore/NativeIDeviceSource
+          python3 tools/watch-support/apply_refresh_diagnostic.py build/SideStore
       - name: Native Watch unit tests
         working-directory: build/SideStore/NativeIDeviceSource
         env:
