@@ -19,7 +19,9 @@
 - 対応ソース: 同じフォルダの `SideStore-Refresh-GroupFix-source.zip`
 - テスト: Rust 8件、Swift署名回帰27件。Fairway本体0.4.0は既存44件。
 
-IPAと対応ソースZIPはローカル保存済み。`release/`はGit管理外であり、GitHubのActions artifactは期限付き。GitHubにIPAが永続公開されているとは考えない。固定したコミット、上流pin、パッチ、ワークフローから再ビルドする。
+公開リリース: https://github.com/iwamoto0414yuuki-droid/Fairway/releases/tag/v0.4.0-watch-refresh 。修正版SideStoreの未署名IPA、対応ソースZIP、Fairwayの未署名IPAとハッシュを永続参照できる配布先として公開した。
+
+IPAと対応ソースZIPはローカルにも保存済み。`release/`はGit管理外であり、GitHubのActions artifactは期限付き。Actions artifactと公開Releaseの添付ファイルを区別する。固定したコミット、上流pin、パッチ、ワークフローから再ビルドする。
 
 ## 利用者がiPhoneで行う操作
 

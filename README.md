@@ -8,6 +8,8 @@ This repository contains a working personal SideStore modification for installin
 
 This is an independent, AI-assisted experiment. It is not an official SideStore release or an endorsement by Apple or SideStore. Success is confirmed for Fairway in the reported setup; other apps and capabilities need their own validation.
 
+**[ダウンロード：IPA・対応ソース・SHA256](https://github.com/iwamoto0414yuuki-droid/Fairway/releases/tag/v0.4.0-watch-refresh)**
+
 ## Start here / まず読む
 
 - **[導入・再利用・ビルドの完成版手順](docs/watch-sideloading/REUSE_GUIDE.md)**
