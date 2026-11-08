@@ -99,7 +99,7 @@ struct SavedRoundView: View {
                     ForEach(Array(round.holes.enumerated()), id: \.element.id) { index, hole in
                         NavigationLink { ScoreEntry(id: id, holeIndex: index, initial: hole).navigationTitle("\(index + 1)ホール") } label: {
                             VStack(alignment: .leading, spacing: 3) {
-                                Text("\(index + 1)ホール")
+                                Text(round.holeTitle(index))
                                 Text(hole.score.value.map { "\($0.strokes)打・\($0.putts ?? 0)パット" } ?? "未入力")
                                     .font(.caption).foregroundStyle(.secondary)
                             }.frame(minHeight: 44)
@@ -168,12 +168,16 @@ struct ScoreEntry: View {
             VStack(spacing: 4) {
                 counterRow("打数", value: draft.strokes,
                     minusLabel: "打数を1減らす", plusLabel: "打数を1増やす",
-                    minusDisabled: draft.strokes == 0, plusDisabled: draft.strokes >= 30,
+                    minusDisabled: draft.regularStrokes == 0, plusDisabled: draft.strokes >= 30,
                     minus: { edit { $0.changeStroke(-1) } }, plus: { edit { $0.changeStroke(1) } })
                 counterRow("うちパット", value: draft.putts,
                     minusLabel: "パットを1減らす", plusLabel: "パットを1増やす。打数も1増えます",
                     minusDisabled: draft.putts == 0, plusDisabled: draft.strokes >= 30,
                     minus: { edit { $0.changePutt(-1) } }, plus: { edit { $0.changePutt(1) } })
+                counterRow("うち罰打", value: draft.penalties,
+                    minusLabel: "罰打を1減らす", plusLabel: "罰打を1増やす。打数も1増えます",
+                    minusDisabled: draft.penalties == 0, plusDisabled: draft.strokes >= 30,
+                    minus: { edit { $0.changePenalty(-1) } }, plus: { edit { $0.changePenalty(1) } })
                 NavigationLink {
                     ClubEditor(clubs: Binding(get: { draft.clubs }, set: { clubs in edit { $0.clubs = clubs } }), strokes: draft.strokes)
                 } label: {

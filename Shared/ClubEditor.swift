@@ -46,12 +46,13 @@ struct ClubChoiceGrid: View {
     let stroke: Int
     let selected: Club?
     let onSelect: (Club?) -> Bool
+    var playingShot = false
     private let columns = Array(repeating: GridItem(.flexible(), spacing: 5), count: 3)
     var body: some View {
         ScrollView {
             VStack(spacing: 10) {
                 LazyVGrid(columns: columns, spacing: 5) {
-                    ForEach(Club.bag) { club in
+                    ForEach(playingShot ? Club.bag.filter { $0 != .putter } : Club.bag) { club in
                         if club == .putter { Color.clear.frame(height: 50).accessibilityHidden(true) }
                         Button { choose(club) } label: {
                             VStack(spacing: 1) {
@@ -69,10 +70,12 @@ struct ClubChoiceGrid: View {
                         .accessibilityLabel(club.title)
                     }
                 }
-                Button("未記録に戻す") { choose(nil) }.frame(minHeight: 44)
-                Button("罰打（クラブなし）") { choose(.penalty) }.frame(minHeight: 44)
-                Text("パット数はスコア画面で入力します。")
-                    .font(.caption2).foregroundStyle(.secondary)
+                Button(playingShot ? "クラブを記録せず戻る" : "未記録に戻す") { choose(nil) }.frame(minHeight: 44)
+                if !playingShot {
+                    Button("罰打（クラブなし）") { choose(.penalty) }.frame(minHeight: 44)
+                    Text("パット数はスコア画面で入力します。")
+                        .font(.caption2).foregroundStyle(.secondary)
+                }
             }.padding(.horizontal, 2)
         }
         .navigationTitle("\(stroke)打目のクラブ")

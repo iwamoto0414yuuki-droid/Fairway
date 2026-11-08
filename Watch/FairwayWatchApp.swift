@@ -7,9 +7,9 @@ struct FairwayWatchApp: App {
         WindowGroup {
             #if DEBUG
             if let mode = ProcessInfo.processInfo.arguments.first(where: { $0.hasPrefix("--preview-") }) { WatchPreview(mode: mode) }
-            else { HomeView().environmentObject(store) }
+            else { WatchRoundHome().environmentObject(store) }
             #else
-            HomeView().environmentObject(store)
+            WatchRoundHome().environmentObject(store)
             #endif
         }
     }
@@ -24,6 +24,7 @@ private struct WatchPreview: View {
         self.mode = mode
         let sample = Store(fileURL: FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString).appendingPathComponent("preview.json"), connectivity: false)
         var round = Round(course: "サンプルコース", count: 18)
+        round.courses = Value(value: CourseSelection(front: .east, back: .west))
         round.holes[0].green.value = Coordinate(latitude: 35.6, longitude: 140.1)
         round.holes[0].score.value = Score(strokes: 5, putts: 2, clubs: [.driver, .iron7, .sw, .putter, .putter])
         round.holes[9].score.value = Score(strokes: 4, putts: nil)
@@ -35,9 +36,11 @@ private struct WatchPreview: View {
             if mode == "--preview-clubs" {
                 ClubEditor(clubs: .constant([.driver, .iron7, .sw, .putter, .putter] + Array<Club?>(repeating: nil, count: 25)), strokes: 5)
             } else if mode == "--preview-club-grid" {
-                ClubChoiceGrid(stroke: 1, selected: .driver, onSelect: { _ in true })
+                ClubChoiceGrid(stroke: 1, selected: .driver, onSelect: { _ in true }, playingShot: true)
             } else if mode == "--preview-home" {
-                HomeView()
+                WatchRoundHome()
+            } else if mode == "--preview-course" {
+                WatchCoursePicker(initial: round.courses?.value, atBreak: false, start: { _ in })
             } else if mode == "--preview-saved" {
                 SavedRoundView(id: round.id)
             } else if mode == "--preview-summary" {
@@ -46,7 +49,7 @@ private struct WatchPreview: View {
                     if let back = round.backSummary { SummaryRow(title: "後半（10〜18H）", summary: back) }
                     SummaryRow(title: "全体", summary: round.summary)
                 }.navigationTitle("スコア集計")
-            } else { ScoreEntry(id: round.id, holeIndex: 0, initial: round.holes[0], showsHoleHint: true).navigationTitle("1ホール") }
+            } else { WatchPlayHole(round: round, index: 0, move: { _ in }, finishNine: {}, showMenu: {}) }
         }
             .environmentObject(store).tint(fairwayGreen).preferredColorScheme(.dark)
     }

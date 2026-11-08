@@ -96,9 +96,14 @@ struct Score: Codable, Equatable {
     var putts: Int?
     // Optional field decodes missing 0.1.0 records as nil without rewriting history.
     var clubs: [Club?]? = nil
+    var penalties: Int? = nil
+    var penaltyStrokes: Int {
+        penalties ?? min(max(0, strokes - (putts ?? 0)), clubs?.filter { $0 == .penalty }.count ?? 0)
+    }
     var isValid: Bool {
         (1...30).contains(strokes) && (putts.map { (0...strokes).contains($0) } ?? true)
         && (clubs.map { $0.count == strokes } ?? true)
+        && (penalties.map { (0...max(0, strokes - (putts ?? 0))).contains($0) } ?? true)
     }
     var clubsRecorded: Int { clubs?.compactMap { $0 }.count ?? 0 }
 }
@@ -132,6 +137,17 @@ struct Hole: Codable, Equatable, Identifiable {
     var revisions: [Revision] { [par.revision, green.revision, score.revision] }
 }
 
+enum CourseNine: String, Codable, CaseIterable, Identifiable {
+    case out = "OUT", inCourse = "IN", east = "東", west = "西", south = "南", north = "北"
+    var id: String { rawValue }
+}
+
+struct CourseSelection: Codable, Equatable {
+    var front: CourseNine
+    var back: CourseNine
+    var title: String { "\(front.rawValue) / \(back.rawValue)" }
+}
+
 struct Round: Codable, Equatable, Identifiable {
     var id: UUID = UUID()
     var date: Date = Date()
@@ -140,10 +156,17 @@ struct Round: Codable, Equatable, Identifiable {
     var finished = Value(value: false)
     // Optional so existing v1 libraries decode without migration or data loss.
     var deletion: Value<Bool>? = nil
+    var courses: Value<CourseSelection>? = nil
     var isDeleted: Bool { deletion?.value == true }
     init(course: String, count: Int) {
         self.course = String(course.prefix(80))
         holes = (1...(count == 9 ? 9 : 18)).map { Hole(id: $0) }
+    }
+    var courseTitle: String { courses?.value.title ?? course }
+    func holeTitle(_ index: Int) -> String {
+        guard let courses else { return "\(index + 1)ホール" }
+        let nine = index < 9 ? courses.value.front : courses.value.back
+        return "\(nine.rawValue) \(index % 9 + 1)H"
     }
     var total: Int { holes.compactMap { $0.score.value?.strokes }.reduce(0, +) }
     var played: Int { holes.filter { $0.score.value != nil }.count }
@@ -154,7 +177,7 @@ struct Round: Codable, Equatable, Identifiable {
     var summary: ScoreSummary { ScoreSummary(holes) }
     var frontSummary: ScoreSummary { ScoreSummary(Array(holes.prefix(9))) }
     var backSummary: ScoreSummary? { holes.count == 18 ? ScoreSummary(Array(holes.suffix(9))) : nil }
-    var revisions: [Revision] { holes.flatMap(\.revisions) + [finished.revision] + (deletion.map { [$0.revision] } ?? []) }
+    var revisions: [Revision] { holes.flatMap(\.revisions) + [finished.revision] + (deletion.map { [$0.revision] } ?? []) + (courses.map { [$0.revision] } ?? []) }
     var maxCounter: Int { revisions.map(\.counter).max() ?? 0 }
     var isValid: Bool {
         [9, 18].contains(holes.count) && holes.map(\.id) == Array(1...holes.count)
@@ -166,6 +189,10 @@ struct Round: Codable, Equatable, Identifiable {
         guard id == other.id, holes.count == other.holes.count, other.isValid else { return }
         for index in holes.indices { holes[index].merge(other.holes[index]) }
         finished.merge(other.finished)
+        if let incoming = other.courses {
+            if courses == nil { courses = incoming }
+            else { courses?.merge(incoming) }
+        }
         if let incoming = other.deletion {
             if deletion == nil { deletion = incoming }
             else { deletion?.merge(incoming) }

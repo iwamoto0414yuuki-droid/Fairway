@@ -50,7 +50,7 @@ final class Store: NSObject, ObservableObject, WCSessionDelegate {
             return true
         } catch { self.error = "保存に失敗しました。画面を閉じずに再試行してください。\(error.localizedDescription)"; return false }
     }
-    @discardableResult func create(course: String, count: Int, template: Round? = nil) -> UUID? {
+    @discardableResult func create(course: String, count: Int, template: Round? = nil, courses: CourseSelection? = nil) -> UUID? {
         var round = Round(course: course.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "マイコース" : course, count: count)
         if let template {
             round.course = template.course
@@ -61,6 +61,7 @@ final class Store: NSObject, ObservableObject, WCSessionDelegate {
                 return hole
             }
         }
+        if let courses { round.courses = Value(value: courses, revision: revision()) }
         return commit(round) ? round.id : nil
     }
     @discardableResult func saveScore(_ id: UUID, hole: Int, score: Score?, expected: Revision, send: Bool = true) -> Bool {
@@ -78,9 +79,16 @@ final class Store: NSObject, ObservableObject, WCSessionDelegate {
         round.holes[hole].green = Value(value: green, revision: stamp)
         return commit(round)
     }
-    func finish(_ id: UUID, value: Bool) {
-        guard var round = round(id) else { return }
-        round.finished = Value(value: value, revision: revision()); commit(round)
+    @discardableResult func finish(_ id: UUID, value: Bool) -> Bool {
+        guard var round = round(id) else { return false }
+        round.finished = Value(value: value, revision: revision())
+        return commit(round)
+    }
+    @discardableResult func setCourses(_ id: UUID, selection: CourseSelection) -> Bool {
+        guard var round = round(id) else { return false }
+        guard round.courses?.value != selection else { return true }
+        round.courses = Value(value: selection, revision: revision())
+        return commit(round)
     }
     @discardableResult func delete(_ id: UUID) -> Bool {
         guard var round = round(id) else { return false }
