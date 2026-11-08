@@ -17,8 +17,9 @@ struct HomeView: View {
                     ForEach(store.library.visibleRounds) { round in
                         NavigationLink { SavedRoundView(id: round.id) } label: {
                             VStack(alignment: .leading) {
-                                Text(round.date, style: .date)
-                                Text("\(round.total)打 · \(round.summary.putts)パット · \(round.played)/\(round.holes.count)H")
+                                Text(round.courseTitle)
+                                Text(round.date, style: .date).font(.caption)
+                                Text("\(round.summary.strokesText) · \(round.summary.puttsLabel) · \(round.played)/\(round.holes.count)H")
                                     .font(.caption).foregroundStyle(.secondary)
                                 Text("見る・修正・削除").font(.caption2).foregroundStyle(fairwayGreen)
                             }
@@ -66,7 +67,7 @@ struct RoundView: View {
                             HStack {
                                 Text("\(hole.id)H")
                                 Spacer()
-                                Text(hole.score.value.map { "\($0.strokes)打 · \($0.putts ?? 0)パット" } ?? "未記録")
+                                Text(hole.score.value.map { "\($0.strokes)打 · " + ($0.putts.map { "\($0)パット" } ?? "パット未記録") } ?? "未記録")
                             }
                         }
                     }
@@ -86,6 +87,7 @@ struct SavedRoundView: View {
         if let round = store.round(id) {
             List {
                 Section {
+                    Text(round.courseTitle).font(.headline)
                     Text(round.date, style: .date)
                     ScoreCard(id: id)
                     NavigationLink("続きから入力") { RoundView(id: id) }
@@ -100,7 +102,7 @@ struct SavedRoundView: View {
                         NavigationLink { ScoreEntry(id: id, holeIndex: index, initial: hole).navigationTitle("\(index + 1)ホール") } label: {
                             VStack(alignment: .leading, spacing: 3) {
                                 Text(round.holeTitle(index))
-                                Text(hole.score.value.map { "\($0.strokes)打・\($0.putts ?? 0)パット" } ?? "未入力")
+                                Text(hole.score.value.map { "\($0.strokes)打・" + ($0.putts.map { "\($0)パット" } ?? "パット未記録") } ?? "未入力")
                                     .font(.caption).foregroundStyle(.secondary)
                             }.frame(minHeight: 44)
                         }
@@ -127,8 +129,10 @@ struct ScoreCard: View {
         if let round = store.round(id) {
             VStack(alignment: .leading, spacing: 10) {
                 if round.holes.count == 18 {
-                    SummaryRow(title: "前半 1〜9H", summary: round.frontSummary)
-                    if let back = round.backSummary { SummaryRow(title: "後半 10〜18H", summary: back) }
+                    let frontTitle = round.courses.map { "前半 \($0.value.front.rawValue)" } ?? "前半 1〜9H"
+                    let backTitle = round.courses.map { "後半 \($0.value.back.rawValue)" } ?? "後半 10〜18H"
+                    SummaryRow(title: frontTitle, summary: round.frontSummary)
+                    if let back = round.backSummary { SummaryRow(title: backTitle, summary: back) }
                 }
                 SummaryRow(title: "合計", summary: round.summary)
                 Text("\(round.played)/\(round.holes.count)H 入力済み").font(.caption2).foregroundStyle(.secondary)
@@ -143,7 +147,10 @@ struct SummaryRow: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 2) {
             Text(title).font(.caption).foregroundStyle(.secondary)
-            Text("\(summary.strokesText) · \(summary.puttsText)パット").monospacedDigit()
+            Text("\(summary.strokesText) · \(summary.puttsLabel)").monospacedDigit()
+            if summary.penalties > 0 {
+                Text("うち罰打 \(summary.penalties)").font(.caption2).foregroundStyle(.secondary)
+            }
         }
     }
 }

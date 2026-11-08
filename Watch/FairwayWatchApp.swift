@@ -40,7 +40,7 @@ private struct WatchPreview: View {
             } else if mode == "--preview-home" {
                 WatchRoundHome()
             } else if mode == "--preview-course" {
-                WatchCoursePicker(initial: round.courses?.value, atBreak: false, start: { _ in })
+                WatchCoursePicker(initial: round.courses?.value, atBreak: false, automaticClubChoice: .constant(true), start: { _ in })
             } else if mode == "--preview-saved" {
                 SavedRoundView(id: round.id)
             } else if mode == "--preview-summary" {

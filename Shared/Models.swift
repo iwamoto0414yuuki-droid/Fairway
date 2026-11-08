@@ -114,6 +114,7 @@ struct ScoreSummary: Equatable {
     var strokes: Int
     var putts: Int
     var puttsRecorded: Int
+    var penalties: Int
     init(_ holes: [Hole]) {
         self.holes = holes.count
         let scores = holes.compactMap { $0.score.value }
@@ -121,9 +122,15 @@ struct ScoreSummary: Equatable {
         strokes = scores.reduce(0) { $0 + $1.strokes }
         let recorded = scores.compactMap(\.putts)
         putts = recorded.reduce(0, +); puttsRecorded = recorded.count
+        penalties = scores.reduce(0) { $0 + $1.penaltyStrokes }
     }
     var strokesText: String { played == 0 ? "—" : "\(strokes)打" }
     var puttsText: String { puttsRecorded == 0 ? "未記録" : "\(putts)" }
+    var puttsLabel: String {
+        if puttsRecorded == 0 { return "パット未記録" }
+        if puttsRecorded < played { return "\(putts)パット（記録分）" }
+        return "\(putts)パット"
+    }
 }
 
 struct Hole: Codable, Equatable, Identifiable {
@@ -163,6 +170,9 @@ struct Round: Codable, Equatable, Identifiable {
         holes = (1...(count == 9 ? 9 : 18)).map { Hole(id: $0) }
     }
     var courseTitle: String { courses?.value.title ?? course }
+    func unscoredHoles(through endIndex: Int) -> [Int] {
+        holes.indices.filter { $0 <= endIndex && holes[$0].score.value == nil }
+    }
     func holeTitle(_ index: Int) -> String {
         guard let courses else { return "\(index + 1)ホール" }
         let nine = index < 9 ? courses.value.front : courses.value.back

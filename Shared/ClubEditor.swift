@@ -61,7 +61,7 @@ struct ClubChoiceGrid: View {
                                     if selected == club { Image(systemName: "checkmark").font(.system(size: 9, weight: .bold)) }
                                 }.lineLimit(1).minimumScaleFactor(0.75)
                                 Text(club.kindName).font(.system(size: 10)).lineLimit(1).minimumScaleFactor(0.75)
-                            }.frame(maxWidth: .infinity, minHeight: 50)
+                            }.frame(maxWidth: .infinity, minHeight: playingShot ? 44 : 50)
                                 .contentShape(RoundedRectangle(cornerRadius: 10))
                         }
                         .buttonStyle(.plain)
@@ -78,7 +78,7 @@ struct ClubChoiceGrid: View {
                 }
             }.padding(.horizontal, 2)
         }
-        .navigationTitle("\(stroke)打目のクラブ")
+        .navigationTitle(playingShot ? "クラブ選択" : "\(stroke)打目のクラブ")
     }
     private func choose(_ club: Club?) {
         if onSelect(club) { dismiss() }

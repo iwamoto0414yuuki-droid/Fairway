@@ -57,6 +57,15 @@ final class CounterTests: XCTestCase {
         XCTAssertEqual(restored.holeTitle(9), "西 1H")
         XCTAssertEqual(restored.total, 4)
     }
+    func testScorecardDistinguishesMissingHolesAndUnrecordedPutts() {
+        var round = Round(course: "Test", count: 18)
+        round.holes[0].score.value = Score(strokes: 5, putts: nil, penalties: 1)
+        round.holes[2].score.value = Score(strokes: 4, putts: 0)
+        XCTAssertEqual(round.unscoredHoles(through: 8), [1, 3, 4, 5, 6, 7, 8])
+        XCTAssertEqual(round.frontSummary.strokes, 9)
+        XCTAssertEqual(round.frontSummary.penalties, 1)
+        XCTAssertEqual(round.frontSummary.puttsLabel, "0パット（記録分）")
+    }
     func testLocalCounterSaveSurvivesRelaunchWithoutSync() throws {
         let file = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString).appendingPathComponent("scores.json")
         defer { try? FileManager.default.removeItem(at: file.deletingLastPathComponent()) }

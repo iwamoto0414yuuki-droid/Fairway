@@ -4,6 +4,7 @@ struct WatchRoundHome: View {
     @EnvironmentObject private var store: Store
     @AppStorage("FairwayWatchActiveRound") private var activeRoundID = ""
     @AppStorage("FairwayWatchActiveHole") private var activeHole = 0
+    @AppStorage("FairwayWatchAutomaticClubChoice") private var automaticClubChoice = true
     @State private var showMenu = false
     @State private var choosingCourse = false
 
@@ -17,14 +18,14 @@ struct WatchRoundHome: View {
         NavigationStack {
             if let round = activeRound, !showMenu {
                 if activeHole == -1 {
-                    WatchCoursePicker(initial: round.courses?.value, atBreak: true) { selection in
+                    WatchCoursePicker(initial: round.courses?.value, atBreak: true, automaticClubChoice: $automaticClubChoice) { selection in
                         if store.setCourses(round.id, selection: selection) { activeHole = 9 }
                     }
                 } else {
                     let index = min(max(0, activeHole), 17)
                     WatchPlayHole(round: round, index: index, move: { activeHole = $0 },
                                   finishNine: { finish(round, at: index) },
-                                  showMenu: { showMenu = true })
+                                  showMenu: { showMenu = true }, automaticClubChoice: automaticClubChoice)
                         .id(round.holes[index].id)
                 }
             } else {
@@ -41,7 +42,8 @@ struct WatchRoundHome: View {
         }
         .sheet(isPresented: $choosingCourse) {
             NavigationStack {
-                WatchCoursePicker(initial: nil, atBreak: false) { selection in
+                WatchCoursePicker(initial: store.library.visibleRounds.compactMap { $0.courses?.value }.first,
+                                  atBreak: false, automaticClubChoice: $automaticClubChoice) { selection in
                     if let id = store.create(course: selection.title, count: 18, courses: selection) {
                         activeHole = 0
                         activeRoundID = id.uuidString
@@ -75,11 +77,13 @@ struct WatchRoundHome: View {
 struct WatchCoursePicker: View {
     @State private var selection: CourseSelection
     let atBreak: Bool
+    @Binding var automaticClubChoice: Bool
     let start: (CourseSelection) -> Void
 
-    init(initial: CourseSelection?, atBreak: Bool, start: @escaping (CourseSelection) -> Void) {
+    init(initial: CourseSelection?, atBreak: Bool, automaticClubChoice: Binding<Bool>, start: @escaping (CourseSelection) -> Void) {
         _selection = State(initialValue: initial ?? CourseSelection(front: .out, back: .inCourse))
         self.atBreak = atBreak
+        _automaticClubChoice = automaticClubChoice
         self.start = start
     }
 
@@ -93,6 +97,7 @@ struct WatchCoursePicker: View {
             coursePicker("後半", selection: $selection.back)
             Button(atBreak ? "後半を開始" : "前半を開始") { start(selection) }
                 .tint(fairwayGreen)
+            Toggle("クラブ選択を自動表示", isOn: $automaticClubChoice).font(.caption)
         }.navigationTitle(atBreak ? "前半終了" : "コース選択")
     }
 
@@ -146,6 +151,7 @@ struct WatchPlayHole: View {
     let move: (Int) -> Void
     let finishNine: () -> Void
     let showMenu: () -> Void
+    var automaticClubChoice = true
     private struct ClubTarget {
         let index: Int
         let revision: Revision
@@ -153,10 +159,12 @@ struct WatchPlayHole: View {
     @State private var clubTarget: ClubTarget?
     @State private var pendingSync = false
     @State private var confirmFinish = false
+    @State private var showCard = false
 
     private var hole: Hole { round.holes[index] }
     private var draft: CounterDraft { CounterDraft(score: hole.score.value) }
     private var lastHoleOfHalf: Bool { index == 8 || index == 17 }
+    private var missingHoles: [Int] { round.unscoredHoles(through: index == 8 ? 8 : 17) }
     private var finishTitle: String { index == 8 ? "前半を終了" : "ラウンドを終了" }
 
     var body: some View {
@@ -167,7 +175,7 @@ struct WatchPlayHole: View {
                             canSubtract: draft.regularStrokes > 0,
                             minus: { edit { $0.changeStroke(-1) } },
                             plus: {
-                                if edit({ $0.changeStroke(1) }),
+                                if edit({ $0.changeStroke(1) }), automaticClubChoice,
                                    let saved = store.round(round.id)?.holes[index].score,
                                    let score = saved.value {
                                     clubTarget = ClubTarget(index: score.strokes - 1, revision: saved.revision)
@@ -186,14 +194,25 @@ struct WatchPlayHole: View {
                     Button("前のホール") { move(index - 1) }.disabled(index % 9 == 0)
                     if lastHoleOfHalf {
                         Button(index == 8 ? "前半終了" : "終了") { confirmFinish = true }
-                            .disabled(hole.score.value == nil)
                     } else {
                         Button("次のホール") { move(index + 1) }
                     }
                 }.font(.caption2)
+                Text("左右にスワイプでホール移動").font(.caption2).foregroundStyle(.secondary)
+                Button("スコアカード") { showCard = true }.font(.caption)
                 Button("メニュー", action: showMenu).font(.caption2)
             }
         }
+        .simultaneousGesture(DragGesture(minimumDistance: 28).onEnded { gesture in
+            let horizontal = gesture.translation.width
+            guard abs(horizontal) > abs(gesture.translation.height) * 2 else { return }
+            if horizontal < 0 {
+                if lastHoleOfHalf { confirmFinish = true }
+                else { move(index + 1) }
+            } else if index % 9 > 0 {
+                move(index - 1)
+            }
+        })
         .navigationTitle(round.holeTitle(index))
         .sheet(isPresented: Binding(get: { clubTarget != nil }, set: { if !$0 { clubTarget = nil } })) {
             if let target = clubTarget {
@@ -205,9 +224,52 @@ struct WatchPlayHole: View {
                 }
             }
         }
+        .sheet(isPresented: $showCard) {
+            NavigationStack {
+                List {
+                    ScoreCard(id: round.id)
+                    if let current = store.round(round.id) {
+                        ForEach(Array(current.holes.enumerated()), id: \.element.id) { offset, recordedHole in
+                            let score = recordedHole.score.value.map { "\($0.strokes)打" } ?? "未入力"
+                            if offset / 9 == index / 9 {
+                                Button {
+                                    showCard = false
+                                    move(offset)
+                                } label: {
+                                    LabeledContent(current.holeTitle(offset), value: score)
+                                }
+                            } else {
+                                NavigationLink {
+                                    ScoreEntry(id: current.id, holeIndex: offset, initial: recordedHole)
+                                        .navigationTitle(current.holeTitle(offset))
+                                } label: {
+                                    LabeledContent(current.holeTitle(offset), value: score)
+                                }
+                            }
+                        }
+                    }
+                }.navigationTitle("ホール一覧")
+            }
+        }
         .confirmationDialog(finishTitle + "しますか？", isPresented: $confirmFinish, titleVisibility: .visible) {
-            Button(finishTitle) { finishNine() }
+            if let missing = missingHoles.first {
+                if missing / 9 == index / 9 {
+                    Button("最初の未入力ホールへ") { move(missing) }
+                } else {
+                    Button("スコアカードを開く") { showCard = true }
+                }
+                Button("未入力のまま" + finishTitle, role: .destructive) { finishNine() }
+            } else {
+                Button(finishTitle) { finishNine() }
+            }
             Button("キャンセル", role: .cancel) { }
+        } message: {
+            if !missingHoles.isEmpty {
+                Text("未入力が\(missingHoles.count)ホールあります。")
+            } else {
+                let summary = index == 8 ? round.frontSummary : round.summary
+                Text("\(summary.strokesText) · \(summary.puttsLabel)")
+            }
         }
         .onDisappear { sync() }
         .onChange(of: scenePhase) { phase in if phase == .background { sync() } }
