@@ -2,43 +2,7 @@ import SwiftUI
 
 let fairwayGreen = Color(red: 0.64, green: 0.91, blue: 0.39)
 
-struct HomeView: View {
-    @EnvironmentObject var store: Store
-    @State private var activeRound: UUID?
-    var body: some View {
-        NavigationStack {
-            List {
-                Section("ラウンドをはじめる") {
-                    Button("18ホールで開始") { activeRound = store.create(course: "ラウンド", count: 18) }
-                    Button("9ホールで開始") { activeRound = store.create(course: "ラウンド", count: 9) }
-                }
-                Section("保存したスコア") {
-                    if store.library.visibleRounds.isEmpty { Text("まだ記録がありません").foregroundStyle(.secondary) }
-                    ForEach(store.library.visibleRounds) { round in
-                        NavigationLink { SavedRoundView(id: round.id) } label: {
-                            VStack(alignment: .leading) {
-                                Text(round.courseTitle)
-                                Text(round.date, style: .date).font(.caption)
-                                Text("\(round.summary.strokesText) · \(round.summary.puttsLabel) · \(round.played)/\(round.holes.count)H")
-                                    .font(.caption).foregroundStyle(.secondary)
-                                Text("見る・修正・削除").font(.caption2).foregroundStyle(fairwayGreen)
-                            }
-                        }
-                    }
-                }
-            }
-            .navigationTitle("Fairway")
-            .navigationDestination(isPresented: Binding(get: { activeRound != nil }, set: { if !$0 { activeRound = nil } })) {
-                if let id = activeRound { RoundView(id: id) }
-            }
-        }
-        .tint(fairwayGreen).preferredColorScheme(.dark)
-        .alert("保存を確認してください", isPresented: Binding(get: { store.error != nil }, set: { if !$0 { store.error = nil } })) {
-            Button("OK") { store.error = nil }
-        } message: { Text(store.error ?? "") }
-    }
-}
-
+#if os(watchOS)
 struct RoundView: View {
     @EnvironmentObject var store: Store
     let id: UUID
@@ -49,7 +13,6 @@ struct RoundView: View {
     }
     var body: some View {
         if let round = store.round(id) {
-            #if os(watchOS)
             TabView(selection: $selected) {
                 ForEach(Array(round.holes.enumerated()), id: \.element.id) { index, hole in
                     ScoreEntry(id: id, holeIndex: index, initial: hole, showsHoleHint: true).tag(index)
@@ -57,26 +20,11 @@ struct RoundView: View {
                 ScrollView { ScoreCard(id: id) }.tag(round.holes.count)
             }
             .tabViewStyle(.page(indexDisplayMode: .automatic))
-            .navigationTitle(selected == round.holes.count ? "スコア集計" : "\(selected + 1)ホール")
-            #else
-            List {
-                Section { ScoreCard(id: id) }
-                Section("ホールごとの記録") {
-                    ForEach(Array(round.holes.enumerated()), id: \.element.id) { index, hole in
-                        NavigationLink { ScoreEntry(id: id, holeIndex: index, initial: hole).navigationTitle("\(index + 1)ホール") } label: {
-                            HStack {
-                                Text("\(hole.id)H")
-                                Spacer()
-                                Text(hole.score.value.map { "\($0.strokes)打 · " + ($0.putts.map { "\($0)パット" } ?? "パット未記録") } ?? "未記録")
-                            }
-                        }
-                    }
-                }
-            }.navigationTitle("スコアカード")
-            #endif
+            .navigationTitle(selected == round.holes.count ? "スコア集計" : round.holeTitle(selected))
         }
     }
 }
+#endif
 
 struct SavedRoundView: View {
     @EnvironmentObject var store: Store
@@ -90,7 +38,13 @@ struct SavedRoundView: View {
                     Text(round.courseTitle).font(.headline)
                     Text(round.date, style: .date)
                     ScoreCard(id: id)
+                    #if os(iOS)
+                    if !round.finished.value {
+                        NavigationLink("続きから入力") { RoundView(id: id) }
+                    }
+                    #else
                     NavigationLink("続きから入力") { RoundView(id: id) }
+                    #endif
                 }
                 Section {
                     Button(role: .destructive) { confirmDelete = true } label: {
@@ -99,7 +53,7 @@ struct SavedRoundView: View {
                 }
                 Section("ホールを選んで修正") {
                     ForEach(Array(round.holes.enumerated()), id: \.element.id) { index, hole in
-                        NavigationLink { ScoreEntry(id: id, holeIndex: index, initial: hole).navigationTitle("\(index + 1)ホール") } label: {
+                        NavigationLink { ScoreEntry(id: id, holeIndex: index, initial: hole).navigationTitle(round.holeTitle(index)) } label: {
                             VStack(alignment: .leading, spacing: 3) {
                                 Text(round.holeTitle(index))
                                 Text(hole.score.value.map { "\($0.strokes)打・" + ($0.putts.map { "\($0)パット" } ?? "パット未記録") } ?? "未入力")
@@ -172,7 +126,16 @@ struct ScoreEntry: View {
     }
     var body: some View {
         ScrollView {
-            VStack(spacing: 4) {
+            VStack(spacing: entrySpacing) {
+                #if os(iOS)
+                if let round = store.round(id) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(round.courseTitle).font(.headline)
+                        Text("\(holeIndex + 1) / \(round.holes.count)ホール")
+                            .font(.subheadline).foregroundStyle(.secondary)
+                    }.frame(maxWidth: .infinity, alignment: .leading)
+                }
+                #endif
                 counterRow("打数", value: draft.strokes,
                     minusLabel: "打数を1減らす", plusLabel: "打数を1増やす",
                     minusDisabled: draft.regularStrokes == 0, plusDisabled: draft.strokes >= 30,
@@ -180,7 +143,7 @@ struct ScoreEntry: View {
                 counterRow("うちパット", value: draft.putts,
                     minusLabel: "パットを1減らす", plusLabel: "パットを1増やす。打数も1増えます",
                     minusDisabled: draft.putts == 0, plusDisabled: draft.strokes >= 30,
-                    minus: { edit { $0.changePutt(-1) } }, plus: { edit { $0.changePutt(1) } })
+                    minus: { edit { $0.changePutt(-1) } }, plus: { edit { $0.changePutt(1, markClub: true) } })
                 counterRow("うち罰打", value: draft.penalties,
                     minusLabel: "罰打を1減らす", plusLabel: "罰打を1増やす。打数も1増えます",
                     minusDisabled: draft.penalties == 0, plusDisabled: draft.strokes >= 30,
@@ -194,25 +157,24 @@ struct ScoreEntry: View {
                 .buttonStyle(.plain)
                 .background(Color(white: 0.18), in: RoundedRectangle(cornerRadius: 10))
                 .disabled(draft.strokes == 0).opacity(draft.strokes == 0 ? 0.45 : 1)
-                Text(draft.strokes == 0 ? "まず打数の＋を押してください" : "パット＋で打数も＋1")
+                Text("パットと罰打は打数にも反映されます")
                     .font(.caption2).foregroundStyle(.secondary)
                 if showsHoleHint { Text("左右にスワイプでホール移動").font(.caption2).foregroundStyle(.secondary) }
                 if draft.strokes > 0 {
                     Button("このホールを未入力に戻す", role: .destructive) { confirmReset = true }
                         .font(.caption).frame(minHeight: 44)
                 }
-            }.padding(.horizontal, 2)
+            }.padding(.horizontal, entryPadding).padding(.vertical, 8)
         }
         .confirmationDialog("このホールの記録を消しますか？", isPresented: $confirmReset, titleVisibility: .visible) {
             Button("未入力に戻す", role: .destructive) { edit { $0 = CounterDraft(score: nil) } }
             Button("キャンセル", role: .cancel) { }
-        } message: { Text("このホールの打数・パット・クラブ記録を消します。") }
+        } message: { Text("このホールの打数・パット・罰打・クラブ記録を消します。") }
         #if os(iOS)
-        .frame(minHeight: 360, maxHeight: 470).padding()
-        .navigationTitle("\(holeIndex + 1)ホール")
+        .navigationTitle(store.round(id)?.holeTitle(holeIndex) ?? "\(holeIndex + 1)ホール")
         #endif
         .onDisappear { sync() }
-        .onChange(of: scenePhase) { phase in if phase != .active { sync() } }
+        .onChange(of: scenePhase) { phase in if phase == .background { sync() } }
         .onChange(of: store.round(id)?.holes[holeIndex].score.revision) { revision in
             if let round = store.round(id), revision != expected {
                 draft = CounterDraft(score: round.holes[holeIndex].score.value)
@@ -220,18 +182,38 @@ struct ScoreEntry: View {
             }
         }
     }
+    private var entrySpacing: CGFloat {
+        #if os(iOS)
+        return 12
+        #else
+        return 4
+        #endif
+    }
+    private var entryPadding: CGFloat {
+        #if os(iOS)
+        return 16
+        #else
+        return 2
+        #endif
+    }
     private func counterRow(_ title: String, value: Int, minusLabel: String, plusLabel: String,
                             minusDisabled: Bool, plusDisabled: Bool,
                             minus: @escaping () -> Void, plus: @escaping () -> Void) -> some View {
         HStack(spacing: 5) {
             VStack(alignment: .leading, spacing: 0) {
-                Text(title).font(.system(size: 11)).lineLimit(1).minimumScaleFactor(0.8)
+                Text(title).font(.caption).lineLimit(1).minimumScaleFactor(0.8)
                 Text("\(value)").font(.system(size: counterNumberSize, weight: .semibold, design: .rounded))
                     .monospacedDigit().lineLimit(1).minimumScaleFactor(0.75)
             }.frame(maxWidth: .infinity, alignment: .leading).accessibilityElement(children: .combine)
             counterButton("−", label: minusLabel, disabled: minusDisabled, action: minus)
             counterButton("＋", label: plusLabel, disabled: plusDisabled, action: plus)
-        }.frame(minHeight: 44)
+        }
+        #if os(iOS)
+        .padding(12)
+        .background(Color(white: 0.11), in: RoundedRectangle(cornerRadius: 14))
+        #else
+        .frame(minHeight: 44)
+        #endif
     }
     private var counterNumberSize: CGFloat {
         #if os(watchOS)
@@ -240,8 +222,15 @@ struct ScoreEntry: View {
         return 48
         #endif
     }
+    private var buttonSize: CGFloat {
+        #if os(iOS)
+        return 54
+        #else
+        return 44
+        #endif
+    }
     private func counterButton(_ text: String, label: String, disabled: Bool, action: @escaping () -> Void) -> some View {
-        Button(action: action) { Text(text).font(.title3).bold().frame(width: 44, height: 44) }
+        Button(action: action) { Text(text).font(.title3).bold().frame(width: buttonSize, height: buttonSize) }
             .buttonStyle(.plain).foregroundStyle(text == "＋" ? Color.black : Color.white)
             .background(text == "＋" ? fairwayGreen : Color(white: 0.18), in: RoundedRectangle(cornerRadius: 10))
             .disabled(disabled).opacity(disabled ? 0.35 : 1).accessibilityLabel(label)

@@ -169,7 +169,12 @@ struct Round: Codable, Equatable, Identifiable {
         self.course = String(course.prefix(80))
         holes = (1...(count == 9 ? 9 : 18)).map { Hole(id: $0) }
     }
-    var courseTitle: String { courses?.value.title ?? course }
+    var courseTitle: String {
+        guard let courses else { return course }
+        let section = holes.count == 9 ? courses.value.front.rawValue : courses.value.title
+        if course == "マイコース" || course == courses.value.title || course == section { return section }
+        return "\(course) · \(section)"
+    }
     func unscoredHoles(through endIndex: Int) -> [Int] {
         holes.indices.filter { $0 <= endIndex && holes[$0].score.value == nil }
     }

@@ -8,13 +8,17 @@ final class ScreenTests: XCTestCase {
         let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         defer { try? FileManager.default.removeItem(at: directory) }
         let store = Store(fileURL: directory.appendingPathComponent("rounds.json"), connectivity: false)
-        let id = try XCTUnwrap(store.create(course: "サンプルコース", count: 18))
+        let id = try XCTUnwrap(store.create(course: "サンプルコース", count: 18, courses: CourseSelection(front: .east, back: .west)))
         XCTAssertTrue(store.configure(id, hole: 0, par: 4, green: Coordinate(latitude: 35.6, longitude: 140.1)))
         XCTAssertTrue(store.saveScore(id, hole: 0, score: Score(strokes: 5, putts: 2, clubs: [.driver, .iron7, .sw, .putter, .putter]), expected: .zero))
         XCTAssertTrue(store.saveScore(id, hole: 9, score: Score(strokes: 4, putts: nil), expected: .zero))
         snapshot(HomeView().environmentObject(store), name: "native-home")
-        snapshot(NavigationStack { RoundView(id: id) }.environmentObject(store), name: "native-card")
+        let selectionKey = "FairwayPhoneSelectedHole-" + id.uuidString
+        UserDefaults.standard.set(0, forKey: selectionKey)
+        defer { UserDefaults.standard.removeObject(forKey: selectionKey) }
+        snapshot(NavigationStack { RoundView(id: id) }.environmentObject(store), name: "native-phone-play")
         let round = try XCTUnwrap(store.round(id))
+        snapshot(NewRoundView(recent: round) { _ in }.environmentObject(store), name: "native-phone-setup")
         snapshot(NavigationStack { ScoreEntry(id: id, holeIndex: 0, initial: round.holes[0]) }.environmentObject(store), name: "native-score")
         let selected: [Club?] = [.driver, .iron7, .sw, .putter, .putter] + Array<Club?>(repeating: nil, count: 25)
         snapshot(NavigationStack { ClubEditor(clubs: .constant(selected), strokes: 5) }, name: "native-clubs")
