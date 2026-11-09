@@ -42,16 +42,13 @@ jobs:
           mkdir -p build
           xcodebuild -project Fairway.xcodeproj -scheme Fairway -configuration Debug \
             -destination "platform=iOS Simulator,id=$SIMULATOR_ID" -derivedDataPath build/simulator \
+            -resultBundlePath build/fairway-tests.xcresult \
             -parallel-testing-enabled NO CODE_SIGNING_ALLOWED=NO test 2>&1 | tee build/native-tests.log
       - name: Device build and IPA
         run: bash scripts/build_ipa.sh
       - name: Export native screenshots
         run: |
-          RESULT_BUNDLE=$(find build/simulator/Logs/Test -maxdepth 1 -name '*.xcresult' -print -quit)
-          xcrun xcresulttool export attachments --path "$RESULT_BUNDLE" --output-path build/screenshots
-      - name: Watch simulator preview
-        timeout-minutes: 6
-        run: python3 scripts/watch_preview.py
+          xcrun xcresulttool export attachments --path build/fairway-tests.xcresult --output-path build/screenshots
       - uses: actions/upload-artifact@v4
         with:
           name: Fairway-0.5.2-phone-round
@@ -60,6 +57,15 @@ jobs:
             build/Fairway-0.5.2-unsigned.ipa.sha256
             build/native-tests.log
             build/screenshots/
+          if-no-files-found: error
+          retention-days: 3
+      - name: Watch simulator preview
+        timeout-minutes: 6
+        run: python3 scripts/watch_preview.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Fairway-0.5.2-watch-preview
+          path: |
             build/native-watch*.png
             build/watch-preview-device.json
           if-no-files-found: error
