@@ -51,10 +51,10 @@ jobs:
           xcrun xcresulttool export attachments --path build/fairway-tests.xcresult --output-path build/screenshots
       - uses: actions/upload-artifact@v4
         with:
-          name: Fairway-0.5.2-phone-round
+          name: Fairway-0.5.3-hole-history
           path: |
-            build/Fairway-0.5.2-unsigned.ipa
-            build/Fairway-0.5.2-unsigned.ipa.sha256
+            build/Fairway-0.5.3-unsigned.ipa
+            build/Fairway-0.5.3-unsigned.ipa.sha256
             build/native-tests.log
             build/screenshots/
           if-no-files-found: error
@@ -64,7 +64,7 @@ jobs:
         run: python3 scripts/watch_preview.py
       - uses: actions/upload-artifact@v4
         with:
-          name: Fairway-0.5.2-watch-preview
+          name: Fairway-0.5.3-watch-preview
           path: |
             build/native-watch*.png
             build/watch-preview-device.json

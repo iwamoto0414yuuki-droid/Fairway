@@ -41,6 +41,8 @@ private struct WatchPreview: View {
                 WatchRoundHome()
             } else if mode == "--preview-course" {
                 WatchCoursePicker(initial: round.courses?.value, atBreak: false, automaticClubChoice: .constant(true), start: { _ in })
+            } else if mode == "--preview-hole-detail" {
+                HoleHistoryDetail(id: round.id, holeIndex: 0)
             } else if mode == "--preview-saved" {
                 SavedRoundView(id: round.id)
             } else if mode == "--preview-summary" {

@@ -122,13 +122,7 @@ private struct WatchRoundList: View {
                     if editing {
                         SavedRoundView(id: round.id)
                     } else {
-                        List {
-                            ScoreCard(id: round.id)
-                            ForEach(Array(round.holes.enumerated()), id: \.element.id) { index, hole in
-                                LabeledContent(round.holeTitle(index),
-                                    value: hole.score.value.map { "\($0.strokes)打" } ?? "未入力")
-                            }
-                        }.navigationTitle(round.courseTitle)
+                        WatchHistoryCard(id: round.id)
                     }
                 } label: {
                     VStack(alignment: .leading) {
@@ -140,6 +134,34 @@ private struct WatchRoundList: View {
                 }
             }
         }.navigationTitle(editing ? "スコア修正" : "ラウンド履歴")
+    }
+}
+
+private struct WatchHistoryCard: View {
+    @EnvironmentObject private var store: Store
+    let id: UUID
+
+    var body: some View {
+        if let round = store.round(id) {
+            List {
+                ScoreCard(id: id)
+                Section("ホール別の記録") {
+                    ForEach(Array(round.holes.enumerated()), id: \.element.id) { index, hole in
+                        NavigationLink {
+                            HoleHistoryDetail(id: id, holeIndex: index)
+                        } label: {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(round.holeTitle(index))
+                                Text(hole.score.value.map { "\($0.strokes)打" } ?? "未入力")
+                                    .font(.caption2).foregroundStyle(.secondary)
+                            }
+                        }
+                    }
+                }
+            }.navigationTitle("スコアカード")
+        } else {
+            Text("この記録は見つかりません。").foregroundStyle(.secondary)
+        }
     }
 }
 

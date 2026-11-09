@@ -24,6 +24,8 @@ final class ScreenTests: XCTestCase {
         snapshot(NavigationStack { ClubEditor(clubs: .constant(selected), strokes: 5) }, name: "native-clubs")
         snapshot(NavigationStack { ClubChoiceGrid(stroke: 1, selected: .driver, onSelect: { _ in true }) }, name: "native-club-grid")
         snapshot(NavigationStack { SavedRoundView(id: id) }.environmentObject(store), name: "native-saved")
+        snapshot(NavigationStack { HoleHistoryDetail(id: id, holeIndex: 0) }.environmentObject(store),
+                 name: "native-hole-history")
     }
     private func snapshot<V: View>(_ view: V, name: String) {
         let controller = UIHostingController(rootView: view.tint(fairwayGreen).preferredColorScheme(.dark).environment(\.locale, Locale(identifier: "ja_JP")))

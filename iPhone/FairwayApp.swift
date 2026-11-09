@@ -309,7 +309,11 @@ private struct PhoneScoreCard: View {
                                 holeRow(title: current.holeTitle(index), score: hole.score.value)
                             }.foregroundStyle(.primary)
                         } else {
-                            holeRow(title: current.holeTitle(index), score: hole.score.value)
+                            NavigationLink {
+                                HoleHistoryDetail(id: current.id, holeIndex: index)
+                            } label: {
+                                holeRow(title: current.holeTitle(index), score: hole.score.value)
+                            }
                         }
                     }
                 }

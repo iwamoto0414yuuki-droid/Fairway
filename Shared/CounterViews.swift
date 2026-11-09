@@ -76,6 +76,52 @@ struct SavedRoundView: View {
     }
 }
 
+struct HoleHistoryDetail: View {
+    @EnvironmentObject private var store: Store
+    let id: UUID
+    let holeIndex: Int
+
+    var body: some View {
+        if let round = store.round(id), round.holes.indices.contains(holeIndex) {
+            List {
+                if let score = round.holes[holeIndex].score.value {
+                    Section("スコア") {
+                        LabeledContent("打数", value: "\(score.strokes)")
+                        LabeledContent("パット", value: score.putts.map(String.init) ?? "未記録")
+                        LabeledContent("罰打", value: "\(score.penaltyStrokes)")
+                    }
+                    Section("打順・クラブ") {
+                        if let clubs = score.clubs, clubs.contains(where: { $0 != nil }) {
+                            ForEach(Array(clubs.enumerated()), id: \.offset) { index, club in
+                                LabeledContent("\(index + 1)打目", value: clubLabel(club))
+                            }
+                        } else {
+                            Text("クラブ未記録").foregroundStyle(.secondary)
+                        }
+                    }
+                } else {
+                    Text("このホールは未入力です。").foregroundStyle(.secondary)
+                }
+            }
+            .navigationTitle(round.holeTitle(holeIndex))
+            #if os(iOS)
+            .navigationBarTitleDisplayMode(.inline)
+            #endif
+        } else {
+            Text("この記録は見つかりません。").foregroundStyle(.secondary)
+        }
+    }
+
+    private func clubLabel(_ club: Club?) -> String {
+        guard let club else { return "未記録" }
+        #if os(watchOS)
+        return club.shortName
+        #else
+        return club.title
+        #endif
+    }
+}
+
 struct ScoreCard: View {
     @EnvironmentObject var store: Store
     let id: UUID
